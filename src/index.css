@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-midnight text-ink font-sans antialiased;
+    margin: 0;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  /* tabular numerals everywhere figures appear */
+  .nums {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply rounded-2xl border border-glass-border bg-glass-fill shadow-glass;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .micro-label {
+    @apply text-[11px] uppercase tracking-[0.18em] text-ink-muted;
+  }
+
+  .btn-accent {
+    @apply rounded-2xl bg-accent px-5 py-3.5 text-center font-semibold text-base
+           shadow-glow transition active:scale-[0.98] disabled:opacity-40
+           disabled:shadow-none;
+  }
+
+  .btn-ghost {
+    @apply rounded-2xl border border-glass-border bg-glass-fill px-5 py-3.5
+           text-center font-medium text-ink transition active:scale-[0.98];
+  }
+
+  /* score-pad button */
+  .pad-btn {
+    @apply glass flex items-center justify-center font-semibold text-ink
+           transition active:scale-95 select-none;
+  }
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Hide scrollbars but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
