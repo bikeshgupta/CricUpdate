@@ -1,108 +1,217 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
 
 export function Screen({ children }: { children: ReactNode }) {
-  return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
-      {children}
-    </div>
-  );
+  return <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col">{children}</div>;
 }
 
-export function AppBar({
+/** Sticky top bar. `children` renders below the title row (e.g. a scoreboard). */
+export function StickyHeader({
   title,
   left,
   right,
-  live,
+  children,
+  border = true,
 }: {
   title?: ReactNode;
   left?: ReactNode;
   right?: ReactNode;
-  live?: boolean;
+  children?: ReactNode;
+  border?: boolean;
 }) {
   return (
-    <header className="mb-5 flex items-center justify-between gap-3 pt-1">
-      <div className="flex items-center gap-2.5">
-        {live && (
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
-            <span className="h-2 w-2 rounded-full bg-accent animate-pulse-glow" />
-            Live
-          </span>
-        )}
-        {left}
-        {title && <span className="text-sm font-semibold text-ink">{title}</span>}
+    <header
+      className={`sticky top-0 z-30 bg-bg/95 backdrop-blur ${border ? 'border-b border-line' : ''}`}
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <div className="flex h-12 items-center justify-between gap-2 px-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {left}
+          {title && <span className="truncate text-body font-semibold text-fg">{title}</span>}
+        </div>
+        <div className="flex items-center gap-1">{right}</div>
       </div>
-      <div className="flex items-center gap-2">{right}</div>
+      {children}
     </header>
   );
 }
 
-export function GlassCard({
-  children,
-  className = '',
-  onClick,
+export function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="-ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface" aria-label="Back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    </button>
+  );
+}
+
+export function SectionHeader({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="section-header">
+      <span>{children}</span>
+      {action}
+    </div>
+  );
+}
+
+export function Divider() {
+  return <div className="border-t border-line" />;
+}
+
+// ---------------------------------------------------------------------------
+// Controls
+// ---------------------------------------------------------------------------
+
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'md' | 'sm';
+  block?: boolean;
+};
+
+const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
+  // literal class names so Tailwind's scanner keeps these @layer component classes
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  danger: 'btn-danger',
+  ghost: 'btn-ghost',
+};
+
+export function Button({ variant = 'secondary', size = 'md', block, className = '', ...rest }: ButtonProps) {
+  return (
+    <button
+      className={`btn ${VARIANT_CLASS[variant]} ${size === 'sm' ? 'btn-sm' : ''} ${block ? 'w-full' : ''} ${className}`}
+      {...rest}
+    />
+  );
+}
+
+export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`input ${props.className ?? ''}`} />;
+}
+
+export function Segmented<T extends string | number>({
+  options,
+  value,
+  onChange,
+  accent,
 }: {
-  children: ReactNode;
-  className?: string;
-  onClick?: () => void;
+  options: { value: T; label: ReactNode }[];
+  value: T;
+  onChange: (v: T) => void;
+  accent?: boolean;
 }) {
   return (
-    <div
-      onClick={onClick}
-      className={`glass p-4 ${onClick ? 'cursor-pointer transition active:scale-[0.99]' : ''} ${className}`}
+    <div className="seg">
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <button
+            key={String(o.value)}
+            onClick={() => onChange(o.value)}
+            className={`seg-item ${active ? (accent ? 'seg-item-active-accent' : 'seg-item-active') : ''}`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-10 shrink-0 rounded-full transition duration-150 ${checked ? 'bg-accent' : 'bg-line-strong'}`}
     >
+      <span
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all duration-150 ${checked ? 'left-[18px]' : 'left-0.5'}`}
+      />
+    </button>
+  );
+}
+
+export function Stepper({ value, onChange, min = 0, max = 99 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) {
+  const btn = 'flex h-8 w-8 items-center justify-center rounded-md border border-line-strong text-fg-muted active:opacity-80 disabled:opacity-30';
+  return (
+    <div className="flex items-center gap-2.5">
+      <button className={btn} disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>−</button>
+      <span className="nums w-5 text-center text-body text-fg">{value}</span>
+      <button className={btn} disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>+</button>
+    </div>
+  );
+}
+
+/** A settings/control row: label on the left, control on the right. */
+export function ControlRow({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="row justify-between py-2.5">
+      <div className="min-w-0">
+        <div className="text-body text-fg">{label}</div>
+        {hint && <div className="text-caption text-fg-faint">{hint}</div>}
+      </div>
       {children}
     </div>
   );
 }
 
-export function AccentButton({
-  children,
-  onClick,
-  disabled,
-  className = '',
-  type = 'button',
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
-  type?: 'button' | 'submit';
-}) {
+export function Tag({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'accent' | 'success' | 'error' }) {
+  const tones = {
+    neutral: 'border-line-strong text-fg-muted',
+    accent: 'border-accent/40 text-accent',
+    success: 'border-success/40 text-success',
+    error: 'border-error/40 text-error',
+  };
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={`btn-accent ${className}`}>
+    <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${tones[tone]}`}>
       {children}
-    </button>
+    </span>
   );
 }
 
-export function GhostButton({
-  children,
-  onClick,
-  className = '',
+// ---------------------------------------------------------------------------
+// Tabs (underline)
+// ---------------------------------------------------------------------------
+
+export function Tabs<T extends string>({
+  tabs,
   active,
+  onChange,
 }: {
-  children: ReactNode;
-  onClick?: () => void;
-  className?: string;
-  active?: boolean;
+  tabs: { id: T; label: string }[];
+  active: T;
+  onChange: (id: T) => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`btn-ghost ${active ? 'border-accent/60 text-accent' : ''} ${className}`}
-    >
-      {children}
-    </button>
+    <div className="flex border-b border-line px-2">
+      {tabs.map((t) => {
+        const isActive = t.id === active;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className={`relative px-3 py-2.5 text-body font-medium transition duration-150 ${isActive ? 'text-fg' : 'text-fg-muted hover:text-fg'}`}
+          >
+            {t.label}
+            {isActive && <motion.span layoutId="tab-underline" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" transition={{ duration: 0.15 }} />}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
-export function MicroLabel({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`micro-label ${className}`}>{children}</div>;
-}
+// ---------------------------------------------------------------------------
+// Bottom sheet
+// ---------------------------------------------------------------------------
 
-/** Bottom sheet modal. */
 export function Sheet({
   open,
   onClose,
@@ -122,84 +231,29 @@ export function Sheet({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
         >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
           <motion.div
-            className="glass relative z-10 w-full max-w-md rounded-b-none rounded-t-3xl border-b-0 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="relative z-10 w-full max-w-md rounded-t-2xl border-t border-line-strong bg-surface"
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
           >
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-glass-border" />
-            {title && <div className="mb-4 text-center text-base font-semibold text-ink">{title}</div>}
-            {children}
+            {title && (
+              <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                <span className="text-body font-semibold text-fg">{title}</span>
+                <button onClick={onClose} className="text-caption text-fg-muted hover:text-fg">
+                  Close
+                </button>
+              </div>
+            )}
+            <div className="px-4 py-4">{children}</div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
-  );
-}
-
-/** Cricbuzz-style segmented tab bar. */
-export function Tabs<T extends string>({
-  tabs,
-  active,
-  onChange,
-}: {
-  tabs: { id: T; label: string }[];
-  active: T;
-  onChange: (id: T) => void;
-}) {
-  return (
-    <div className="mb-4 flex rounded-xl border border-glass-border bg-surface-sunken p-1">
-      {tabs.map((t) => {
-        const isActive = t.id === active;
-        return (
-          <button
-            key={t.id}
-            onClick={() => onChange(t.id)}
-            className="relative flex-1 rounded-lg py-2 text-sm font-semibold transition"
-          >
-            {isActive && (
-              <motion.span
-                layoutId="tab-pill"
-                className="absolute inset-0 rounded-lg bg-accent"
-                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-              />
-            )}
-            <span className={`relative ${isActive ? 'text-base' : 'text-ink-muted'}`}>
-              {t.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-export function Chip({
-  children,
-  selected,
-  onClick,
-  tone = 'default',
-}: {
-  children: ReactNode;
-  selected?: boolean;
-  onClick?: () => void;
-  tone?: 'default' | 'lady';
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3.5 py-2 text-sm font-medium transition active:scale-95 ${
-        selected
-          ? 'border-accent bg-accent/15 text-accent'
-          : 'border-glass-border bg-glass-fill text-ink'
-      } ${tone === 'lady' && !selected ? 'text-ink-muted' : ''}`}
-    >
-      {children}
-    </button>
   );
 }

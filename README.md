@@ -12,8 +12,10 @@ mid-match player changes, and correcting the last entry).
 
 ## Stack
 - **React + TypeScript + Vite**, installable **PWA**
-- **Tailwind CSS** — "Midnight Glass" theme (dark, glassy, single lime accent)
-- **Framer Motion** — 3D coin-flip toss, score animations
+- **Tailwind CSS** — dense, divider-based dark UI (GitHub/Linear-inspired:
+  `#0D1117` background, `#161B22` surface, `#2F81F7` accent), compact type,
+  44px controls, no gradients/shadows
+- **Framer Motion** — subtle 150ms fade/slide transitions, coin-flip toss
 - **Zustand** — match state; **Vitest** — scoring-engine tests
 
 ## Architecture

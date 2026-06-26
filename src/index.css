@@ -14,13 +14,13 @@
   }
 
   body {
-    @apply bg-midnight text-ink font-sans antialiased;
+    @apply bg-bg text-fg font-sans text-body antialiased;
     margin: 0;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
   }
 
-  /* tabular numerals everywhere figures appear */
+  /* tabular figures for all numbers */
   .nums {
     font-variant-numeric: tabular-nums;
     @apply font-mono;
@@ -28,50 +28,74 @@
 }
 
 @layer components {
-  /* Solid elevated card (kept the .glass name for compatibility). */
-  .glass {
-    @apply rounded-2xl border border-glass-border bg-surface shadow-card;
+  /* ---- buttons (44px) ---- */
+  .btn {
+    @apply inline-flex h-11 select-none items-center justify-center gap-2 rounded-lg
+           px-4 text-body font-medium transition duration-150 active:opacity-80
+           disabled:pointer-events-none disabled:opacity-40;
   }
-
-  .micro-label {
-    @apply text-[11px] uppercase tracking-[0.16em] text-ink-muted;
+  .btn-primary {
+    @apply bg-accent text-white hover:bg-accent-hover;
   }
-
-  .btn-accent {
-    @apply rounded-xl bg-accent px-5 py-3.5 text-center font-semibold text-base
-           shadow-glow transition active:scale-[0.98] disabled:opacity-40
-           disabled:shadow-none;
+  .btn-secondary {
+    @apply border border-line-strong bg-surface text-fg hover:bg-surface2;
   }
-
+  .btn-danger {
+    @apply border border-error/40 bg-error/10 text-error hover:bg-error/15;
+  }
   .btn-ghost {
-    @apply rounded-xl border border-glass-border bg-surface-raised px-5 py-3.5
-           text-center font-medium text-ink transition active:scale-[0.98];
+    @apply text-fg-muted hover:bg-surface hover:text-fg;
+  }
+  .btn-sm {
+    @apply h-8 px-3 text-caption;
   }
 
-  /* score-pad button */
-  .pad-btn {
-    @apply flex items-center justify-center rounded-xl border border-glass-border
-           bg-surface-raised font-semibold text-ink shadow-card transition
-           active:scale-95 select-none;
+  /* ---- inputs (44px, 8px radius) ---- */
+  .input {
+    @apply h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-body
+           text-fg outline-none transition duration-150 placeholder:text-fg-faint
+           focus:border-accent;
   }
 
-  /* inset input field */
-  .field {
-    @apply w-full rounded-xl border border-glass-border bg-surface-sunken px-3.5 py-2.5
-           text-ink outline-none placeholder:text-ink-faint focus:border-accent/50;
+  /* ---- section header (13px medium) ---- */
+  .section-header {
+    @apply flex items-center justify-between px-4 py-2 text-label font-medium text-fg-muted;
+  }
+
+  /* ---- segmented control ---- */
+  .seg {
+    @apply flex gap-1 rounded-lg border border-line-strong bg-surface p-1;
+  }
+  .seg-item {
+    @apply flex-1 rounded-md px-3 py-2 text-center text-body font-medium text-fg-muted
+           transition duration-150 active:opacity-80;
+  }
+  .seg-item-active {
+    @apply bg-surface2 text-fg;
+  }
+  .seg-item-active-accent {
+    @apply bg-accent text-white;
+  }
+
+  /* ---- dense list row ---- */
+  .row {
+    @apply flex min-h-[44px] items-center gap-3 px-4;
   }
 }
 
-.backface-hidden {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-/* Hide scrollbars but keep scroll */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@layer utilities {
+  .divide-line > * + * {
+    @apply border-t border-line;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

@@ -15,8 +15,8 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center text-ink-muted">
-        <span className="animate-pulse">Loading…</span>
+      <div className="flex min-h-[100dvh] items-center justify-center text-caption text-fg-muted">
+        Loading…
       </div>
     );
   }

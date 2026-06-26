@@ -4,51 +4,57 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Midnight palette — solid elevated surfaces (was see-through glass)
-        base: '#0B0F14',
-        base2: '#0E141B',
-        accent: '#C7F94B', // electric lime — single accent
-        wicket: '#F2555A',
-        ink: {
-          DEFAULT: '#F2F5F7', // primary text
-          muted: '#9AA4AE', // secondary text
-          faint: '#5A646E', // tertiary / disabled
+        bg: '#0D1117',
+        surface: '#161B22',
+        surface2: '#1C232C',
+        line: {
+          DEFAULT: '#21262D', // subtle divider
+          strong: '#30363D', // control border
         },
-        // elevated card surfaces, clearly lighter than the background
-        surface: {
-          DEFAULT: '#161D27', // card
-          raised: '#1C2530', // raised control / hover
-          sunken: '#10151C', // inset (inputs)
+        accent: {
+          DEFAULT: '#2F81F7',
+          hover: '#388BFD',
         },
-        glass: {
-          fill: '#161D27',
-          border: 'rgba(255,255,255,0.09)',
+        success: '#2EA043',
+        error: '#F85149',
+        fg: {
+          DEFAULT: '#F0F6FC', // primary text
+          muted: '#8B949E', // secondary text
+          faint: '#6E7681', // tertiary / placeholder
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
+      fontSize: {
+        // compact scale
+        caption: ['12px', { lineHeight: '16px' }],
+        body: ['14px', { lineHeight: '20px' }],
+        label: ['13px', { lineHeight: '18px' }],
+        team: ['18px', { lineHeight: '22px', fontWeight: '600' }],
+        score: ['30px', { lineHeight: '32px', fontWeight: '700' }],
+      },
       borderRadius: {
-        '2xl': '1.25rem',
-        '3xl': '1.75rem',
+        lg: '8px',
+        md: '6px',
       },
-      boxShadow: {
-        glass: '0 8px 30px rgba(0,0,0,0.35)',
-        card: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 6px 20px -8px rgba(0,0,0,0.6)',
-        glow: '0 0 24px rgba(199,249,75,0.25)',
-      },
-      backgroundImage: {
-        'midnight': 'linear-gradient(180deg, #0B0F14 0%, #0E141B 100%)',
+      transitionDuration: {
+        150: '150ms',
       },
       keyframes: {
-        'pulse-glow': {
-          '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(199,249,75,0.5)' },
-          '50%': { opacity: '0.6', boxShadow: '0 0 0 6px rgba(199,249,75,0)' },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'slide-up': {
+          from: { opacity: '0', transform: 'translateY(6px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
         },
       },
       animation: {
-        'pulse-glow': 'pulse-glow 1.6s ease-in-out infinite',
+        'fade-in': 'fade-in 150ms ease-out',
+        'slide-up': 'slide-up 150ms ease-out',
       },
     },
   },

@@ -4,8 +4,8 @@ import { useAuth } from '../store/authStore';
 import { useMatch } from '../store/matchStore';
 import { inningsState, teamById } from '../scoring/match';
 import type { InningsState, Match } from '../scoring/types';
-import { AccentButton, AppBar, GhostButton, GlassCard, MicroLabel, Screen, Tabs } from '../components/ui';
-import Scorecard from '../components/Scorecard';
+import { BackButton, Button, Screen, SectionHeader, StickyHeader, Tabs } from '../components/ui';
+import Scoreboard from '../components/Scorecard';
 import ScoringPad from '../components/ScoringPad';
 import InningsTable from '../components/InningsTable';
 import Commentary from '../components/Commentary';
@@ -29,146 +29,105 @@ export default function LiveMatch() {
   }, [id, subscribe, unsubscribe]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center text-ink-muted">
-        <span className="animate-pulse">Loading match…</span>
-      </div>
-    );
+    return <div className="flex min-h-[100dvh] items-center justify-center text-caption text-fg-muted">Loading match…</div>;
   }
 
   if (!match) {
     return (
       <Screen>
-        <AppBar left={<button onClick={() => navigate('/')} className="text-ink-muted">←</button>} />
-        <GlassCard className="mt-10 space-y-2 text-center text-sm text-ink-muted">
-          <p>This match isn’t available on this device.</p>
-          <p className="text-xs text-ink-faint">
-            In this demo build, matches live in your browser. Live sharing across
-            devices arrives when the cloud backend is wired in.
-          </p>
-        </GlassCard>
+        <StickyHeader left={<BackButton onClick={() => navigate('/')} />} title="Match" />
+        <div className="px-4 py-6 text-caption text-fg-muted">
+          This match isn’t available on this device. In the demo build, matches live in your browser.
+        </div>
       </Screen>
     );
   }
 
   const isOwner = !!user && user.uid === match.ownerUid;
 
+  if (match.status === 'toss') {
+    return (
+      <Screen>
+        <StickyHeader title="Toss" left={<BackButton onClick={() => navigate('/')} />} right={<ShareBar matchId={match.id} compact />} />
+        {isOwner ? <TossFlow match={match} /> : <div className="px-4 py-6 text-caption text-fg-muted">The toss is underway…</div>}
+      </Screen>
+    );
+  }
+
+  return <MatchView match={match} isOwner={isOwner} onBack={() => navigate('/')} />;
+}
+
+// ---------------------------------------------------------------------------
+type TabId = 'live' | 'scorecard' | 'commentary';
+
+function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean; onBack: () => void }) {
+  const [tab, setTab] = useState<TabId>('live');
+  const isComplete = match.status === 'complete';
+  const board = inningsState(match, 2) ?? inningsState(match, 1);
+
   return (
     <Screen>
-      <AppBar
-        live={match.status === 'innings1' || match.status === 'innings2'}
-        left={
-          <button onClick={() => navigate('/')} className="text-ink-muted">
-            ←
-          </button>
+      <StickyHeader
+        title="CricUpdate"
+        left={<BackButton onClick={onBack} />}
+        right={
+          <>
+            {!isComplete && <span className="mr-1 flex items-center gap-1.5 text-caption font-medium text-accent"><span className="h-1.5 w-1.5 rounded-full bg-accent" />Live</span>}
+            <ShareBar matchId={match.id} compact />
+          </>
         }
-        right={<ShareBar matchId={match.id} compact />}
-      />
+        border={false}
+      >
+        {board && <Scoreboard match={match} state={board} />}
+        <Tabs
+          tabs={[
+            { id: 'live', label: isComplete ? 'Summary' : 'Live' },
+            { id: 'scorecard', label: 'Scorecard' },
+            { id: 'commentary', label: 'Commentary' },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
+      </StickyHeader>
 
-      {match.status === 'toss' ? (
-        isOwner ? (
-          <TossFlow match={match} />
-        ) : (
-          <WaitingForToss />
-        )
-      ) : (
-        <MatchTabs match={match} isOwner={isOwner} />
-      )}
+      <div className="flex-1 animate-fade-in">
+        {tab === 'live' && (isComplete ? <ResultView match={match} /> : isOwner ? <ScoringView match={match} /> : <ViewerLive match={match} />)}
+        {tab === 'scorecard' && <ScorecardTab match={match} />}
+        {tab === 'commentary' && <Commentary match={match} />}
+      </div>
     </Screen>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Tabbed match view (Cricbuzz-style): Live · Scorecard · Commentary
-// ---------------------------------------------------------------------------
-type TabId = 'live' | 'scorecard' | 'commentary';
-
-function MatchTabs({ match, isOwner }: { match: Match; isOwner: boolean }) {
-  const [tab, setTab] = useState<TabId>('live');
-  const isComplete = match.status === 'complete';
-
-  return (
-    <div>
-      <Tabs
-        tabs={[
-          { id: 'live', label: isComplete ? 'Result' : 'Live' },
-          { id: 'scorecard', label: 'Scorecard' },
-          { id: 'commentary', label: 'Commentary' },
-        ]}
-        active={tab}
-        onChange={setTab}
-      />
-
-      {tab === 'live' &&
-        (isComplete ? (
-          <ResultView match={match} />
-        ) : isOwner ? (
-          <ScoringView match={match} />
-        ) : (
-          <ViewerView match={match} />
-        ))}
-
-      {tab === 'scorecard' && <ScorecardTab match={match} />}
-      {tab === 'commentary' && <Commentary match={match} />}
-    </div>
-  );
+function Token({ t }: { t: string }) {
+  const cls = t.includes('W') ? 'border-error/50 text-error' : t === '4' || t === '6' ? 'border-accent/50 text-accent' : t === '•' ? 'border-line text-fg-faint' : 'border-line-strong text-fg';
+  return <span className={`nums flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-caption font-semibold ${cls}`}>{t}</span>;
 }
 
-function ScorecardTab({ match }: { match: Match }) {
-  const s1 = inningsState(match, 1);
-  const s2 = inningsState(match, 2);
-  if (!s1 && !s2) {
-    return <GlassCard className="text-center text-sm text-ink-faint">No scorecard yet.</GlassCard>;
-  }
+function ThisOver({ state }: { state: InningsState }) {
   return (
-    <div className="space-y-4">
-      {s1 && <InningsTable match={match} state={s1} />}
-      {s2 && <InningsTable match={match} state={s2} />}
-    </div>
-  );
-}
-
-function ResultView({ match }: { match: Match }) {
-  return (
-    <div className="space-y-4">
-      {match.result && (
-        <div className="glass p-5 text-center">
-          <MicroLabel className="mb-1">Result</MicroLabel>
-          <div className="text-xl font-extrabold text-accent">{match.result}</div>
-        </div>
-      )}
-      <ShareBar matchId={match.id} />
-    </div>
-  );
-}
-
-function WaitingForToss() {
-  return (
-    <GlassCard className="mt-10 text-center text-sm text-ink-muted">
-      The toss is underway… the match will appear here live.
-    </GlassCard>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Viewer (read-only, live)
-// ---------------------------------------------------------------------------
-function ViewerView({ match }: { match: Match }) {
-  const state = currentState(match);
-  if (!state) return null;
-  return (
-    <div className="space-y-4">
-      <Scorecard match={match} state={state} />
-      <div className="text-center text-xs text-ink-faint">
-        Following live · updates ball by ball
+    <div className="flex items-center gap-3 border-b border-line px-4 py-2.5">
+      <span className="shrink-0 text-caption text-fg-faint">This over</span>
+      <div className="flex flex-wrap gap-1.5">
+        {state.thisOver.length === 0 ? <span className="text-caption text-fg-faint">—</span> : state.thisOver.map((t, i) => <Token key={i} t={t} />)}
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Scorer (owner)
-// ---------------------------------------------------------------------------
+// ---- viewer ----
+function ViewerLive({ match }: { match: Match }) {
+  const state = inningsState(match, 2) ?? inningsState(match, 1);
+  if (!state) return null;
+  return (
+    <div>
+      <ThisOver state={state} />
+      <div className="px-4 py-3 text-caption text-fg-faint">Following live · updates ball by ball. Open Commentary for the full feed.</div>
+    </div>
+  );
+}
+
+// ---- owner scoring ----
 function ScoringView({ match }: { match: Match }) {
   const active = useMatch((s) => s.activeInnings)();
   const pendingStrikerId = useMatch((s) => s.pendingStrikerId);
@@ -179,37 +138,31 @@ function ScoringView({ match }: { match: Match }) {
   if (!active) return null;
   const { state, which } = active;
 
-  // End of first innings → innings break.
   if (which === 1 && state.isComplete && !match.innings2) {
     return <InningsBreak match={match} firstInnings={state} />;
   }
 
   const battingTeam = teamById(match, state.battingTeamId);
   const bowlingTeam = teamById(match, state.bowlingTeamId);
-
-  const needBatter =
-    (state.strikerId === null && !pendingStrikerId) ||
-    (state.nonStrikerId === null && !pendingNonStrikerId);
+  const needBatter = (state.strikerId === null && !pendingStrikerId) || (state.nonStrikerId === null && !pendingNonStrikerId);
   const needBowler = state.currentBowlerId === null && !pendingBowlerId;
 
+  if (needBatter) {
+    return <NewBatterPrompt match={match} state={state} battingTeamId={battingTeam.id} pendingStrikerId={pendingStrikerId} pendingNonStrikerId={pendingNonStrikerId} />;
+  }
+  if (needBowler) {
+    return <NewBowlerPrompt bowlingTeamPlayers={bowlingTeam.players} lastBowlerId={lastBowler(match)} />;
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <GhostButton onClick={() => setManagerOpen(true)} className="px-3 py-1.5 text-xs">
-          + Player
-        </GhostButton>
+    <div>
+      <ThisOver state={state} />
+      <ScoringPad match={match} state={state} />
+      <div className="border-t border-line px-4 py-3">
+        <Button variant="ghost" size="sm" onClick={() => setManagerOpen(true)}>
+          + Add player
+        </Button>
       </div>
-
-      <Scorecard match={match} state={state} />
-
-      {needBatter ? (
-        <NewBatterPrompt match={match} state={state} battingTeamId={battingTeam.id} pendingStrikerId={pendingStrikerId} pendingNonStrikerId={pendingNonStrikerId} />
-      ) : needBowler ? (
-        <NewBowlerPrompt bowlingTeamPlayers={bowlingTeam.players} lastBowlerId={lastBowler(match)} />
-      ) : (
-        <ScoringPad match={match} state={state} />
-      )}
-
       <PlayerManager open={managerOpen} onClose={() => setManagerOpen(false)} match={match} />
     </div>
   );
@@ -230,47 +183,28 @@ function NewBatterPrompt({
 }) {
   const selectNewBatter = useMatch((s) => s.selectNewBatter);
   const battingTeam = teamById(match, battingTeamId);
-
-  const outIds = Object.values(state.batters)
-    .filter((b) => b.out)
-    .map((b) => b.playerId);
-  const atCrease = [
-    state.strikerId,
-    state.nonStrikerId,
-    pendingStrikerId,
-    pendingNonStrikerId,
-  ].filter(Boolean) as string[];
+  const outIds = Object.values(state.batters).filter((b) => b.out).map((b) => b.playerId);
+  const atCrease = [state.strikerId, state.nonStrikerId, pendingStrikerId, pendingNonStrikerId].filter(Boolean) as string[];
 
   return (
-    <GlassCard className="space-y-3">
-      <MicroLabel>Select next batter</MicroLabel>
-      <PlayerPicker
-        players={battingTeam.players}
-        excludeIds={[...outIds, ...atCrease]}
-        onSelect={selectNewBatter}
-        emptyHint="No batters left — innings should be over."
-      />
-    </GlassCard>
+    <div>
+      <SectionHeader>Select next batter</SectionHeader>
+      <div className="px-4">
+        <PlayerPicker players={battingTeam.players} excludeIds={[...outIds, ...atCrease]} onSelect={selectNewBatter} emptyHint="No batters left." />
+      </div>
+    </div>
   );
 }
 
-function NewBowlerPrompt({
-  bowlingTeamPlayers,
-  lastBowlerId,
-}: {
-  bowlingTeamPlayers: Match['teamA']['players'];
-  lastBowlerId: string | null;
-}) {
+function NewBowlerPrompt({ bowlingTeamPlayers, lastBowlerId }: { bowlingTeamPlayers: Match['teamA']['players']; lastBowlerId: string | null }) {
   const selectNewBowler = useMatch((s) => s.selectNewBowler);
   return (
-    <GlassCard className="space-y-3">
-      <MicroLabel>Next over — select bowler</MicroLabel>
-      <PlayerPicker
-        players={bowlingTeamPlayers}
-        excludeIds={lastBowlerId ? [lastBowlerId] : []}
-        onSelect={selectNewBowler}
-      />
-    </GlassCard>
+    <div>
+      <SectionHeader>Next over — select bowler</SectionHeader>
+      <div className="px-4">
+        <PlayerPicker players={bowlingTeamPlayers} excludeIds={lastBowlerId ? [lastBowlerId] : []} onSelect={selectNewBowler} />
+      </div>
+    </div>
   );
 }
 
@@ -286,49 +220,58 @@ function InningsBreak({ match, firstInnings }: { match: Match; firstInnings: Inn
   const ready = strikerId && nonStrikerId && bowlerId && strikerId !== nonStrikerId;
 
   return (
-    <div className="space-y-4">
-      <div className="glass p-5 text-center">
-        <MicroLabel className="mb-1">Innings break</MicroLabel>
-        <div className="text-sm text-ink-muted">
-          {teamById(match, firstInnings.battingTeamId).name} scored
-        </div>
-        <div className="nums text-3xl font-extrabold text-accent">
-          {firstInnings.totalRuns}-{firstInnings.wickets}
-        </div>
-        <div className="mt-2 text-sm text-ink">
-          {battingNext.name} need <span className="font-bold text-accent">{target}</span> to win
+    <div className="animate-fade-in">
+      <div className="border-b border-line px-4 py-3">
+        <div className="text-caption text-fg-muted">Innings break</div>
+        <div className="mt-0.5 text-body text-fg">
+          {teamById(match, firstInnings.battingTeamId).name} <span className="nums font-semibold">{firstInnings.totalRuns}/{firstInnings.wickets}</span>
+          <span className="text-fg-muted"> · {battingNext.name} need </span>
+          <span className="nums font-semibold text-accent">{target}</span>
         </div>
       </div>
-
-      <GlassCard className="space-y-3">
-        <MicroLabel>Striker · {battingNext.name}</MicroLabel>
-        <PlayerPicker players={battingNext.players} selectedId={strikerId} excludeIds={nonStrikerId ? [nonStrikerId] : []} onSelect={setStrikerId} />
-      </GlassCard>
-      <GlassCard className="space-y-3">
-        <MicroLabel>Non-striker</MicroLabel>
-        <PlayerPicker players={battingNext.players} selectedId={nonStrikerId} excludeIds={strikerId ? [strikerId] : []} onSelect={setNonStrikerId} />
-      </GlassCard>
-      <GlassCard className="space-y-3">
-        <MicroLabel>Opening bowler · {bowlingNext.name}</MicroLabel>
-        <PlayerPicker players={bowlingNext.players} selectedId={bowlerId} onSelect={setBowlerId} />
-      </GlassCard>
-
-      <div className="sticky bottom-4">
-        <AccentButton disabled={!ready} onClick={() => startInnings2(strikerId!, nonStrikerId!, bowlerId!)} className="w-full">
-          Start 2nd innings →
-        </AccentButton>
+      <SectionHeader>Striker · {battingNext.name}</SectionHeader>
+      <div className="px-4"><PlayerPicker players={battingNext.players} selectedId={strikerId} excludeIds={nonStrikerId ? [nonStrikerId] : []} onSelect={setStrikerId} /></div>
+      <SectionHeader>Non-striker</SectionHeader>
+      <div className="px-4"><PlayerPicker players={battingNext.players} selectedId={nonStrikerId} excludeIds={strikerId ? [strikerId] : []} onSelect={setNonStrikerId} /></div>
+      <SectionHeader>Opening bowler · {bowlingNext.name}</SectionHeader>
+      <div className="px-4"><PlayerPicker players={bowlingNext.players} selectedId={bowlerId} onSelect={setBowlerId} /></div>
+      <div className="sticky bottom-0 mt-4 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        <Button variant="primary" block disabled={!ready} onClick={() => startInnings2(strikerId!, nonStrikerId!, bowlerId!)}>
+          Start 2nd innings
+        </Button>
       </div>
     </div>
   );
 }
 
-// ---- helpers ---------------------------------------------------------------
-function currentState(match: Match): InningsState | null {
-  if (match.status === 'innings2') return inningsState(match, 2);
-  if (match.status === 'innings1') return inningsState(match, 1);
-  return null;
+// ---- shared tabs ----
+function ScorecardTab({ match }: { match: Match }) {
+  const s1 = inningsState(match, 1);
+  const s2 = inningsState(match, 2);
+  if (!s1 && !s2) return <div className="px-4 py-6 text-caption text-fg-faint">No scorecard yet.</div>;
+  return (
+    <div className="divide-y divide-line">
+      {s2 && <InningsTable match={match} state={s2} />}
+      {s1 && <InningsTable match={match} state={s1} />}
+    </div>
+  );
 }
 
+function ResultView({ match }: { match: Match }) {
+  return (
+    <div>
+      {match.result && (
+        <div className="border-b border-line px-4 py-4">
+          <div className="text-caption text-fg-muted">Result</div>
+          <div className="mt-0.5 text-team text-success">{match.result}</div>
+        </div>
+      )}
+      <ShareBar matchId={match.id} />
+    </div>
+  );
+}
+
+// ---- helpers ----
 function lastBowler(match: Match): string | null {
   const innings = match.status === 'innings2' ? match.innings2 : match.innings1;
   return innings?.balls.at(-1)?.bowler ?? null;

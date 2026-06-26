@@ -22,12 +22,12 @@ export default function CoinToss({
       first.current = false;
       return;
     }
-    const spins = 5;
+    const spins = 3;
     const final = outcome === 'heads' ? 0 : 180;
     controls
       .start({
         rotateX: [0, spins * 360 + final],
-        transition: { duration: 1.7, ease: [0.22, 1, 0.36, 1] },
+        transition: { duration: 1.1, ease: [0.22, 1, 0.36, 1] },
       })
       .then(() => onRest?.());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -45,22 +45,22 @@ export default function CoinToss({
       >
         {/* Heads */}
         <div
-          className={`${face} border-2 border-accent/70 bg-gradient-to-br from-accent/20 to-transparent shadow-glow`}
+          className={`${face} border-2 border-accent bg-surface`}
           style={{ transform: 'rotateX(0deg)' }}
         >
           <div className="text-center">
-            <div className="text-3xl font-extrabold text-accent">H</div>
-            <div className="micro-label mt-1">Heads</div>
+            <div className="text-3xl font-bold text-accent">H</div>
+            <div className="mt-1 text-caption text-fg-muted">Heads</div>
           </div>
         </div>
         {/* Tails */}
         <div
-          className={`${face} border-2 border-ink-muted/40 bg-gradient-to-br from-white/5 to-transparent`}
+          className={`${face} border-2 border-line-strong bg-surface`}
           style={{ transform: 'rotateX(180deg)' }}
         >
           <div className="text-center">
-            <div className="text-3xl font-extrabold text-ink">T</div>
-            <div className="micro-label mt-1">Tails</div>
+            <div className="text-3xl font-bold text-fg">T</div>
+            <div className="mt-1 text-caption text-fg-muted">Tails</div>
           </div>
         </div>
       </motion.div>

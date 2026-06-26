@@ -4,13 +4,13 @@ import { useAuth } from '../store/authStore';
 import { dataService } from '../services/dataService';
 import { inningsState, teamById } from '../scoring/match';
 import type { Match } from '../scoring/types';
-import { AccentButton, AppBar, GhostButton, GlassCard, MicroLabel, Screen } from '../components/ui';
+import { Button, Screen, SectionHeader, StickyHeader } from '../components/ui';
 
 function relativeDate(ts: number): string {
   const days = Math.floor((Date.now() - ts) / 86_400_000);
   if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days} days ago`;
+  if (days === 1) return '1d';
+  if (days < 7) return `${days}d`;
   return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
@@ -19,39 +19,24 @@ function MatchRow({ match, onClick }: { match: Match; onClick: () => void }) {
   const s2 = inningsState(match, 2);
   const t1 = s1 ? teamById(match, s1.battingTeamId) : null;
   const t2 = s2 ? teamById(match, s2.battingTeamId) : null;
+  const live = match.status === 'innings1' || match.status === 'innings2';
 
   return (
-    <GlassCard onClick={onClick}>
-      <div className="flex items-center justify-between">
-        <MicroLabel>{match.status === 'complete' ? 'Result' : 'In progress'}</MicroLabel>
-        <span className="text-[11px] text-ink-faint">{relativeDate(match.createdAt)}</span>
+    <button onClick={onClick} className="block w-full px-4 py-3 text-left transition duration-150 hover:bg-surface">
+      <div className="flex items-center justify-between gap-3">
+        <span className="truncate text-body font-medium text-fg">
+          {t1?.name ?? match.teamA.name} <span className="text-fg-faint">v</span> {t2?.name ?? match.teamB.name}
+        </span>
+        <span className="shrink-0 text-caption text-fg-faint">{live ? <span className="text-accent">● Live</span> : relativeDate(match.createdAt)}</span>
       </div>
-      <div className="mt-2.5 space-y-1.5">
-        {t1 && s1 && (
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-ink">{t1.name}</span>
-            <span className="nums text-sm text-ink">
-              {s1.totalRuns}-{s1.wickets}{' '}
-              <span className="text-ink-faint">({s1.oversText})</span>
-            </span>
-          </div>
-        )}
-        {t2 && s2 && (
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-ink">{t2.name}</span>
-            <span className="nums text-sm text-ink">
-              {s2.totalRuns}-{s2.wickets}{' '}
-              <span className="text-ink-faint">({s2.oversText})</span>
-            </span>
-          </div>
-        )}
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <span className="nums truncate text-caption text-fg-muted">
+          {s1 && <>{s1.totalRuns}/{s1.wickets} ({s1.oversText})</>}
+          {s2 && <> · {s2.totalRuns}/{s2.wickets} ({s2.oversText})</>}
+        </span>
+        {match.result && <span className="shrink-0 truncate text-caption text-success">{match.result}</span>}
       </div>
-      {match.result && (
-        <div className="mt-3 border-t border-glass-border pt-2.5 text-sm font-semibold text-accent">
-          {match.result}
-        </div>
-      )}
-    </GlassCard>
+    </button>
   );
 }
 
@@ -71,43 +56,36 @@ export default function Home() {
 
   return (
     <Screen>
-      <AppBar
+      <StickyHeader
         title="CricUpdate"
         right={
-          <button onClick={signOut} className="text-xs text-ink-muted">
+          <button onClick={signOut} className="btn btn-ghost btn-sm">
             Sign out
           </button>
         }
       />
 
-      <p className="mb-5 text-sm text-ink-muted">
-        Hi {user.name.split(' ')[0]} — ready to score a match?
-      </p>
+      <div className="border-b border-line px-4 py-3">
+        <Button variant="primary" block onClick={() => navigate('/new')}>
+          New match
+        </Button>
+      </div>
 
-      <AccentButton onClick={() => navigate('/new')} className="w-full">
-        + New Match
-      </AccentButton>
+      <SectionHeader>Recent matches</SectionHeader>
 
-      <MicroLabel className="mb-3 mt-8">Match history</MicroLabel>
       {loading ? (
-        <div className="text-sm text-ink-faint">Loading…</div>
+        <div className="px-4 py-6 text-caption text-fg-faint">Loading…</div>
       ) : matches.length === 0 ? (
-        <GlassCard className="text-center text-sm text-ink-muted">
-          No matches yet. Start one above and it’ll show up here.
-        </GlassCard>
+        <div className="px-4 py-6 text-caption text-fg-faint">No matches yet. Start one above.</div>
       ) : (
-        <div className="space-y-3">
+        <div className="divide-line border-t border-line">
           {matches.map((m) => (
             <MatchRow key={m.id} match={m} onClick={() => navigate(`/match/${m.id}`)} />
           ))}
         </div>
       )}
 
-      <div className="mt-8 text-center">
-        <GhostButton onClick={signOut} className="text-xs text-ink-muted">
-          Using a mocked account · data stays on this device
-        </GhostButton>
-      </div>
+      <div className="px-4 py-4 text-caption text-fg-faint">Signed in as {user.name} · data stays on this device.</div>
     </Screen>
   );
 }
