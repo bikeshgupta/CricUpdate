@@ -4,23 +4,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#0D1117',
-        surface: '#161B22',
-        surface2: '#1C232C',
+        // neutral grey base
+        bg: '#131517',
+        surface: '#1B1E21',
+        surface2: '#23272B',
         line: {
-          DEFAULT: '#21262D', // subtle divider
-          strong: '#30363D', // control border
+          DEFAULT: '#2A2F34', // subtle divider
+          strong: '#373D43', // control border
         },
+        // green primary accent
         accent: {
-          DEFAULT: '#2F81F7',
-          hover: '#388BFD',
+          DEFAULT: '#3FB950',
+          hover: '#46C75A',
         },
-        success: '#2EA043',
+        // orange for boundary highlights
+        boundary: {
+          DEFAULT: '#F0883E',
+          hover: '#F59B57',
+        },
+        success: '#3FB950',
         error: '#F85149',
         fg: {
-          DEFAULT: '#F0F6FC', // primary text
-          muted: '#8B949E', // secondary text
-          faint: '#6E7681', // tertiary / placeholder
+          DEFAULT: '#F0F3F5', // primary text
+          muted: '#9BA3AB', // secondary text
+          faint: '#6B7178', // tertiary / placeholder
         },
       },
       fontFamily: {

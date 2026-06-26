@@ -59,7 +59,7 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
       {/* runs */}
       <div className="grid grid-cols-6 gap-2">
         {RUN_VALUES.map((n) => (
-          <button key={n} onClick={() => onRun(n)} className={`${padBtn} text-lg ${n === 4 || n === 6 ? '!text-accent' : ''}`}>
+          <button key={n} onClick={() => onRun(n)} className={`${padBtn} text-lg ${n === 4 || n === 6 ? '!text-boundary' : ''}`}>
             {n}
           </button>
         ))}

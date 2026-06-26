@@ -106,7 +106,7 @@ function ResultBanner({ match }: { match: Match }) {
 }
 
 function Token({ t }: { t: string }) {
-  const cls = t.includes('W') ? 'border-error/50 text-error' : t === '4' || t === '6' ? 'border-accent/50 text-accent' : t === '•' ? 'border-line text-fg-faint' : 'border-line-strong text-fg';
+  const cls = t.includes('W') ? 'border-error/50 text-error' : t === '4' || t === '6' ? 'border-boundary/50 text-boundary' : t === '•' ? 'border-line text-fg-faint' : 'border-line-strong text-fg';
   return <span className={`nums flex h-7 min-w-7 items-center justify-center rounded-md border px-1.5 text-caption font-semibold ${cls}`}>{t}</span>;
 }
 

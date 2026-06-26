@@ -9,7 +9,7 @@ function Badge({ entry }: { entry: CommentaryEntry }) {
   }
   if (entry.tone === 'four' || entry.tone === 'six') {
     return (
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent text-[11px] font-bold text-accent">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-boundary text-[11px] font-bold text-boundary">
         {entry.tone === 'four' ? '4' : '6'}
       </span>
     );
