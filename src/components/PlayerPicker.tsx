@@ -1,5 +1,4 @@
 import type { Player } from '../scoring/types';
-import { Tag } from './ui';
 
 function Check() {
   return (
@@ -44,7 +43,6 @@ export default function PlayerPicker({
           >
             <span className="flex items-center gap-2 text-body text-fg">
               {p.name}
-              {p.category === 'ladies' && <Tag>L</Tag>}
               {isOut && <span className="text-caption text-fg-faint">out</span>}
             </span>
             {selected && <Check />}

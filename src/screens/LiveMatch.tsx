@@ -9,6 +9,7 @@ import Scoreboard from '../components/Scorecard';
 import ScoringPad from '../components/ScoringPad';
 import InningsTable from '../components/InningsTable';
 import Commentary from '../components/Commentary';
+import Squads from '../components/Squads';
 import TossFlow from '../components/TossFlow';
 import PlayerPicker from '../components/PlayerPicker';
 import PlayerManager from '../components/PlayerManager';
@@ -58,7 +59,7 @@ export default function LiveMatch() {
 }
 
 // ---------------------------------------------------------------------------
-type TabId = 'live' | 'scorecard' | 'commentary';
+type TabId = 'live' | 'scorecard' | 'squads';
 
 function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<TabId>('live');
@@ -68,7 +69,7 @@ function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean;
   return (
     <Screen>
       <StickyHeader
-        title="CricUpdate"
+        title={`${match.teamA.name} v ${match.teamB.name}`}
         left={<BackButton onClick={onBack} />}
         right={
           <>
@@ -81,9 +82,9 @@ function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean;
         {board && <Scoreboard match={match} state={board} />}
         <Tabs
           tabs={[
-            { id: 'live', label: isComplete ? 'Summary' : 'Live' },
+            { id: 'live', label: 'Live' },
             { id: 'scorecard', label: 'Scorecard' },
-            { id: 'commentary', label: 'Commentary' },
+            { id: 'squads', label: 'Squads' },
           ]}
           active={tab}
           onChange={setTab}
@@ -91,12 +92,17 @@ function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean;
       </StickyHeader>
 
       <div className="flex-1 animate-fade-in">
-        {tab === 'live' && (isComplete ? <ResultView match={match} /> : isOwner ? <ScoringView match={match} /> : <ViewerLive match={match} />)}
+        {tab === 'live' && <LiveTab match={match} isOwner={isOwner} />}
         {tab === 'scorecard' && <ScorecardTab match={match} />}
-        {tab === 'commentary' && <Commentary match={match} />}
+        {tab === 'squads' && <Squads match={match} />}
       </div>
     </Screen>
   );
+}
+
+function ResultBanner({ match }: { match: Match }) {
+  if (!match.result) return null;
+  return <div className="border-b border-line bg-surface px-4 py-2.5 text-body font-semibold text-accent">{match.result}</div>;
 }
 
 function Token({ t }: { t: string }) {
@@ -115,20 +121,32 @@ function ThisOver({ state }: { state: InningsState }) {
   );
 }
 
-// ---- viewer ----
+// ---- Live tab ----
+function LiveTab({ match, isOwner }: { match: Match; isOwner: boolean }) {
+  if (match.status === 'complete') {
+    return (
+      <div>
+        <ResultBanner match={match} />
+        <ShareBar matchId={match.id} />
+        <Commentary match={match} />
+      </div>
+    );
+  }
+  return isOwner ? <OwnerLive match={match} /> : <ViewerLive match={match} />;
+}
+
 function ViewerLive({ match }: { match: Match }) {
   const state = inningsState(match, 2) ?? inningsState(match, 1);
   if (!state) return null;
   return (
     <div>
       <ThisOver state={state} />
-      <div className="px-4 py-3 text-caption text-fg-faint">Following live · updates ball by ball. Open Commentary for the full feed.</div>
+      <Commentary match={match} />
     </div>
   );
 }
 
-// ---- owner scoring ----
-function ScoringView({ match }: { match: Match }) {
+function OwnerLive({ match }: { match: Match }) {
   const active = useMatch((s) => s.activeInnings)();
   const pendingStrikerId = useMatch((s) => s.pendingStrikerId);
   const pendingNonStrikerId = useMatch((s) => s.pendingNonStrikerId);
@@ -158,11 +176,12 @@ function ScoringView({ match }: { match: Match }) {
     <div>
       <ThisOver state={state} />
       <ScoringPad match={match} state={state} />
-      <div className="border-t border-line px-4 py-3">
+      <div className="border-y border-line px-4 py-2.5">
         <Button variant="ghost" size="sm" onClick={() => setManagerOpen(true)}>
           + Add player
         </Button>
       </div>
+      <Commentary match={match} />
       <PlayerManager open={managerOpen} onClose={() => setManagerOpen(false)} match={match} />
     </div>
   );
@@ -244,34 +263,18 @@ function InningsBreak({ match, firstInnings }: { match: Match; firstInnings: Inn
   );
 }
 
-// ---- shared tabs ----
 function ScorecardTab({ match }: { match: Match }) {
   const s1 = inningsState(match, 1);
   const s2 = inningsState(match, 2);
   if (!s1 && !s2) return <div className="px-4 py-6 text-caption text-fg-faint">No scorecard yet.</div>;
   return (
     <div className="divide-y divide-line">
-      {s2 && <InningsTable match={match} state={s2} />}
-      {s1 && <InningsTable match={match} state={s1} />}
+      {s2 && <InningsTable match={match} state={s2} defaultOpen />}
+      {s1 && <InningsTable match={match} state={s1} defaultOpen={!s2} />}
     </div>
   );
 }
 
-function ResultView({ match }: { match: Match }) {
-  return (
-    <div>
-      {match.result && (
-        <div className="border-b border-line px-4 py-4">
-          <div className="text-caption text-fg-muted">Result</div>
-          <div className="mt-0.5 text-team text-success">{match.result}</div>
-        </div>
-      )}
-      <ShareBar matchId={match.id} />
-    </div>
-  );
-}
-
-// ---- helpers ----
 function lastBowler(match: Match): string | null {
   const innings = match.status === 'innings2' ? match.innings2 : match.innings1;
   return innings?.balls.at(-1)?.bowler ?? null;

@@ -7,13 +7,13 @@ import { Button, SectionHeader, Segmented } from './ui';
 import CoinToss from './CoinToss';
 import PlayerPicker from './PlayerPicker';
 
-type Step = 'call' | 'flip' | 'decision' | 'openers';
+type Step = 'start' | 'call' | 'flip' | 'decision' | 'manual' | 'openers';
 
 export default function TossFlow({ match }: { match: Match }) {
   const setToss = useMatch((s) => s.setToss);
   const startInnings1 = useMatch((s) => s.startInnings1);
 
-  const [step, setStep] = useState<Step>('call');
+  const [step, setStep] = useState<Step>('start');
   const [callingTeamId, setCallingTeamId] = useState(match.teamA.id);
   const [call, setCall] = useState<'heads' | 'tails'>('heads');
   const [outcome, setOutcome] = useState<'heads' | 'tails'>('heads');
@@ -21,6 +21,11 @@ export default function TossFlow({ match }: { match: Match }) {
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [decision, setDecision] = useState<'bat' | 'bowl' | null>(null);
 
+  // manual toss
+  const [manualWinner, setManualWinner] = useState(match.teamA.id);
+  const [manualDecision, setManualDecision] = useState<'bat' | 'bowl'>('bat');
+
+  // openers
   const [strikerId, setStrikerId] = useState<string | null>(null);
   const [nonStrikerId, setNonStrikerId] = useState<string | null>(null);
   const [bowlerId, setBowlerId] = useState<string | null>(null);
@@ -46,6 +51,13 @@ export default function TossFlow({ match }: { match: Match }) {
     setStep('openers');
   };
 
+  const confirmManual = () => {
+    setWinnerId(manualWinner);
+    setDecision(manualDecision);
+    setToss({ callingTeamId: manualWinner, call: 'heads', outcome: 'heads', winnerTeamId: manualWinner, decision: manualDecision });
+    setStep('openers');
+  };
+
   const winner = winnerId ? teamById(match, winnerId) : null;
   const loser = winnerId ? (winnerId === match.teamA.id ? match.teamB : match.teamA) : null;
   const battingFirst = decision === 'bat' ? winner : loser;
@@ -54,6 +66,51 @@ export default function TossFlow({ match }: { match: Match }) {
 
   return (
     <div className="animate-fade-in">
+      {step === 'start' && (
+        <div className="space-y-3 px-4 py-6">
+          <p className="text-center text-caption text-fg-muted">Do the toss, or set the result manually.</p>
+          <Button variant="primary" block onClick={() => setStep('call')}>
+            Flip the coin
+          </Button>
+          <Button variant="secondary" block onClick={() => setStep('manual')}>
+            Set toss manually
+          </Button>
+        </div>
+      )}
+
+      {step === 'manual' && (
+        <div className="space-y-4 px-4 py-4">
+          <div>
+            <SectionHeader>Toss won by</SectionHeader>
+            <Segmented
+              options={[
+                { value: match.teamA.id, label: match.teamA.name },
+                { value: match.teamB.id, label: match.teamB.name },
+              ]}
+              value={manualWinner}
+              onChange={setManualWinner}
+            />
+          </div>
+          <div>
+            <SectionHeader>Elected to</SectionHeader>
+            <Segmented
+              options={[
+                { value: 'bat', label: 'Bat' },
+                { value: 'bowl', label: 'Bowl' },
+              ]}
+              value={manualDecision}
+              onChange={setManualDecision}
+            />
+          </div>
+          <Button variant="primary" block onClick={confirmManual}>
+            Confirm
+          </Button>
+          <button onClick={() => setStep('start')} className="block w-full text-center text-caption text-fg-muted">
+            Back
+          </button>
+        </div>
+      )}
+
       {step === 'call' && (
         <div className="space-y-4 px-4 py-4">
           <div>

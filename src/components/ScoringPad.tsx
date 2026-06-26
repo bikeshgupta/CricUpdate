@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMatch } from '../store/matchStore';
-import { playerById, playerName, teamById } from '../scoring/match';
+import { playerName, teamById } from '../scoring/match';
 import { ballToken } from '../scoring/engine';
 import { SHOT_TYPES } from '../scoring/commentary';
 import type { InningsState, Match, WicketType } from '../scoring/types';
@@ -50,8 +50,6 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
     else recordBall({ batterRuns: n });
   };
 
-  const strikerIsLady = !!state.strikerId && playerById(match, state.strikerId)?.category === 'ladies';
-  const ladyNoRun = strikerIsLady && match.settings.noRunsOnWideForLadies;
   const strikerName = state.strikerId ? playerName(match, state.strikerId) : 'Batter';
   const bowlingTeam = teamById(match, state.bowlingTeamId);
   const lastBall = active?.innings.balls.at(-1);
@@ -121,21 +119,8 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
       </Sheet>
 
       <Sheet open={sheet === 'wide'} onClose={close} title="Wide">
-        {ladyNoRun ? (
-          <div className="space-y-3">
-            <p className="text-caption text-fg-muted">
-              Striker is a lady — no runs on a wide. Only the {match.settings.wideRuns}-run penalty is added.
-            </p>
-            <Button variant="primary" block onClick={() => { recordBall({ extra: 'wide', extraRuns: 0 }); close(); }}>
-              Add wide
-            </Button>
-          </div>
-        ) : (
-          <>
-            <p className="mb-3 text-caption text-fg-muted">Runs run while the ball is wide</p>
-            <NumGrid values={[0, 1, 2, 3, 4]} cols="grid-cols-5" onPick={(n) => { recordBall({ extra: 'wide', extraRuns: n }); close(); }} />
-          </>
-        )}
+        <p className="mb-3 text-caption text-fg-muted">Runs run while the ball is wide</p>
+        <NumGrid values={[0, 1, 2, 3, 4]} cols="grid-cols-5" onPick={(n) => { recordBall({ extra: 'wide', extraRuns: n }); close(); }} />
       </Sheet>
 
       <Sheet open={sheet === 'noball'} onClose={close} title="No ball">

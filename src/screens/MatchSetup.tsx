@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { useMatch } from '../store/matchStore';
-import { DEFAULT_SETTINGS, type MatchSettings, type Player, type PlayerCategory, type Team } from '../scoring/types';
+import { dataService } from '../services/dataService';
+import { DEFAULT_SETTINGS, type Match, type MatchSettings, type Player, type Team } from '../scoring/types';
 import {
   BackButton,
   Button,
@@ -14,57 +15,289 @@ import {
   StickyHeader,
   Stepper,
   Switch,
-  Tag,
   TextInput,
 } from '../components/ui';
 
-interface DraftPlayer {
-  name: string;
-  category: PlayerCategory;
+type DraftTeam = Team; // { id, name, players: Player[] }
+
+function newTeam(name = ''): DraftTeam {
+  return { id: crypto.randomUUID(), name, players: [] };
 }
 
-function TeamBlock({
-  label,
-  name,
-  setName,
-  players,
-  setPlayers,
-  onAdd,
-}: {
-  label: string;
-  name: string;
-  setName: (v: string) => void;
-  players: DraftPlayer[];
-  setPlayers: (p: DraftPlayer[]) => void;
-  onAdd: () => void;
-}) {
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
+
+/** Distinct teams (by name) seen in the user's past matches, most-recent first. */
+function useSavedTeams(uid: string): Team[] {
+  const [teams, setTeams] = useState<Team[]>([]);
+  useEffect(() => {
+    dataService.listMyMatches(uid).then((matches) => {
+      const seen = new Map<string, Team>();
+      for (const m of matches) {
+        for (const t of [m.teamA, m.teamB]) {
+          const key = t.name.trim().toLowerCase();
+          if (t.name.trim() && !seen.has(key)) seen.set(key, t);
+        }
+      }
+      setTeams([...seen.values()]);
+    });
+  }, [uid]);
+  return teams;
+}
+
+// ---------------------------------------------------------------------------
+
+export default function MatchSetup() {
+  const user = useAuth((s) => s.user)!;
+  const createMatch = useMatch((s) => s.createMatch);
+  const navigate = useNavigate();
+  const savedTeams = useSavedTeams(user.uid);
+
+  const [step, setStep] = useState<'pick' | 'roster'>('pick');
+  const [teamA, setTeamA] = useState<DraftTeam | null>(null);
+  const [teamB, setTeamB] = useState<DraftTeam | null>(null);
+  const [tab, setTab] = useState<'A' | 'B'>('A');
+  const [overs, setOvers] = useState(6);
+  const [settings, setSettings] = useState<MatchSettings>(DEFAULT_SETTINGS);
+  const [showRules, setShowRules] = useState(false);
+
+  // team-picker sheet
+  const [pickSlot, setPickSlot] = useState<'A' | 'B' | null>(null);
+
+  const teamsChosen = !!teamA && !!teamB;
+  const ready = !!teamA && !!teamB && teamA.players.length >= 2 && teamB.players.length >= 2 && teamA.name.trim() && teamB.name.trim();
+
+  const importTeam = (t: Team): DraftTeam => ({
+    id: crypto.randomUUID(),
+    name: t.name,
+    players: t.players.map<Player>((p) => ({ id: crypto.randomUUID(), name: p.name, category: 'gents' })),
+  });
+
+  const choose = (team: DraftTeam) => {
+    if (pickSlot === 'A') setTeamA(team);
+    else if (pickSlot === 'B') setTeamB(team);
+    setPickSlot(null);
+  };
+
+  const setActive = (updater: (t: DraftTeam) => DraftTeam) => {
+    if (tab === 'A' && teamA) setTeamA(updater(teamA));
+    else if (tab === 'B' && teamB) setTeamB(updater(teamB));
+  };
+  const activeTeam = tab === 'A' ? teamA : teamB;
+
+  const start = async () => {
+    if (!ready || !teamA || !teamB) return;
+    const id = crypto.randomUUID().slice(0, 8);
+    const match: Match = {
+      id,
+      ownerUid: user.uid,
+      createdAt: Date.now(),
+      status: 'toss',
+      settings: { ...settings, oversPerInnings: overs, playersPerTeam: Math.max(teamA.players.length, teamB.players.length) },
+      teamA: { ...teamA, id: 'teamA' },
+      teamB: { ...teamB, id: 'teamB' },
+      toss: null,
+      innings1: null,
+      innings2: null,
+      result: null,
+    };
+    await createMatch(match);
+    navigate(`/match/${id}`);
+  };
+
   return (
-    <section>
-      <SectionHeader action={<span className="text-caption text-fg-faint">{players.length} players</span>}>
-        {label}
-      </SectionHeader>
-      <div className="px-4 pb-1">
-        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Team name" />
+    <Screen>
+      <StickyHeader
+        title={step === 'pick' ? 'New match' : 'Add players'}
+        left={<BackButton onClick={() => (step === 'roster' ? setStep('pick') : navigate('/'))} />}
+      />
+
+      {step === 'pick' ? (
+        <div className="flex-1">
+          <div className="flex items-stretch gap-3 px-4 py-8">
+            <TeamCard team={teamA} onTap={() => setPickSlot('A')} />
+            <div className="flex items-center text-body font-semibold text-fg-muted">vs</div>
+            <TeamCard team={teamB} onTap={() => setPickSlot('B')} />
+          </div>
+          <div className="px-4 text-center text-caption text-fg-faint">
+            Pick an existing team or create a new one for each side.
+          </div>
+          <div className="sticky bottom-0 mt-8 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <Button variant="primary" block disabled={!teamsChosen} onClick={() => setStep('roster')}>
+              {teamsChosen ? 'Continue' : 'Choose both teams'}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <div className="grid grid-cols-2 border-b border-line">
+            {(['A', 'B'] as const).map((slot) => {
+              const t = slot === 'A' ? teamA : teamB;
+              const isActive = tab === slot;
+              return (
+                <button
+                  key={slot}
+                  onClick={() => setTab(slot)}
+                  className={`relative truncate px-3 py-3 text-body font-medium transition duration-150 ${isActive ? 'text-fg' : 'text-fg-muted'}`}
+                >
+                  {t?.name || (slot === 'A' ? 'Team 1' : 'Team 2')}
+                  <span className="ml-1.5 text-caption text-fg-faint">{t?.players.length ?? 0}</span>
+                  {isActive && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {activeTeam && (
+            <RosterEditor
+              team={activeTeam}
+              onRename={(name) => setActive((t) => ({ ...t, name }))}
+              onAdd={(name) => setActive((t) => ({ ...t, players: [...t.players, { id: crypto.randomUUID(), name, category: 'gents' }] }))}
+              onRemove={(pid) => setActive((t) => ({ ...t, players: t.players.filter((p) => p.id !== pid) }))}
+            />
+          )}
+
+          <SectionHeader>Overs per innings</SectionHeader>
+          <div className="px-4 pb-2">
+            <Segmented options={[2, 5, 6, 8, 10, 20].map((o) => ({ value: o, label: o }))} value={overs} onChange={setOvers} />
+          </div>
+
+          <button onClick={() => setShowRules((v) => !v)} className="section-header w-full">
+            <span>Match rules</span>
+            <span className="text-fg-faint">{showRules ? 'Hide' : 'Edit'}</span>
+          </button>
+          {showRules && <RulesEditor settings={settings} setSettings={setSettings} />}
+
+          <div className="sticky bottom-0 mt-6 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <Button variant="primary" block disabled={!ready} onClick={start}>
+              {ready ? 'Start match' : 'Add at least 2 players per team'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <TeamPickerSheet
+        open={pickSlot !== null}
+        onClose={() => setPickSlot(null)}
+        savedTeams={savedTeams}
+        excludeName={(pickSlot === 'A' ? teamB : teamA)?.name}
+        onCreateNew={() => choose(newTeam(pickSlot === 'A' ? 'Team A' : 'Team B'))}
+        onSelectExisting={(t) => choose(importTeam(t))}
+      />
+    </Screen>
+  );
+}
+
+function TeamCard({ team, onTap }: { team: DraftTeam | null; onTap: () => void }) {
+  return (
+    <button
+      onClick={onTap}
+      className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-line-strong bg-surface px-3 py-8 transition duration-150 active:opacity-80"
+    >
+      {team ? (
+        <>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-body font-semibold text-accent">{initials(team.name || 'New')}</div>
+          <div className="text-center text-body font-semibold text-fg">{team.name || 'New team'}</div>
+          <div className="text-caption text-fg-muted">{team.players.length} players · tap to change</div>
+        </>
+      ) : (
+        <>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-line-strong text-2xl text-fg-muted">+</div>
+          <div className="text-body text-fg-muted">Add team</div>
+        </>
+      )}
+    </button>
+  );
+}
+
+function RosterEditor({
+  team,
+  onRename,
+  onAdd,
+  onRemove,
+}: {
+  team: DraftTeam;
+  onRename: (name: string) => void;
+  onAdd: (name: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const add = () => {
+    const t = draft.trim();
+    if (!t) return;
+    onAdd(t);
+    setDraft('');
+  };
+  return (
+    <div>
+      <div className="px-4 py-3">
+        <TextInput value={team.name} onChange={(e) => onRename(e.target.value)} placeholder="Team name" />
       </div>
-      {players.length > 0 && (
-        <div className="divide-line mt-1 border-t border-line">
-          {players.map((p, i) => (
-            <div key={i} className="row justify-between">
-              <span className="flex items-center gap-2 text-body text-fg">
+      {team.players.length > 0 && (
+        <div className="divide-line border-t border-line">
+          {team.players.map((p, i) => (
+            <div key={p.id} className="row justify-between">
+              <span className="flex items-center gap-3 text-body text-fg">
+                <span className="text-caption text-fg-faint">{i + 1}</span>
                 {p.name}
-                {p.category === 'ladies' && <Tag>L</Tag>}
               </span>
-              <button onClick={() => setPlayers(players.filter((_, j) => j !== i))} className="text-caption text-fg-faint hover:text-error">
-                Remove
-              </button>
+              <button onClick={() => onRemove(p.id)} className="text-caption text-fg-faint hover:text-error">Remove</button>
             </div>
           ))}
         </div>
       )}
-      <button onClick={onAdd} className="row w-full border-t border-line text-body font-medium text-accent">
-        + Add player
-      </button>
-    </section>
+      <div className="flex items-center gap-2 border-y border-line px-4 py-2.5">
+        <TextInput value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} placeholder="Add player name" />
+        <Button variant="secondary" onClick={add} disabled={!draft.trim()} className="shrink-0 px-4">
+          Add
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function TeamPickerSheet({
+  open,
+  onClose,
+  savedTeams,
+  excludeName,
+  onCreateNew,
+  onSelectExisting,
+}: {
+  open: boolean;
+  onClose: () => void;
+  savedTeams: Team[];
+  excludeName?: string;
+  onCreateNew: () => void;
+  onSelectExisting: (t: Team) => void;
+}) {
+  const available = useMemo(
+    () => savedTeams.filter((t) => t.name.trim().toLowerCase() !== (excludeName ?? '').trim().toLowerCase()),
+    [savedTeams, excludeName],
+  );
+  return (
+    <Sheet open={open} onClose={onClose} title="Select team">
+      <div className="space-y-3">
+        <Button variant="primary" block onClick={onCreateNew}>
+          + Create new team
+        </Button>
+        {available.length > 0 && (
+          <>
+            <div className="px-1 pt-1 text-caption text-fg-muted">Or pick a saved team</div>
+            <div className="divide-line overflow-hidden rounded-lg border border-line-strong">
+              {available.map((t) => (
+                <button key={t.id} onClick={() => onSelectExisting(t)} className="row w-full justify-between bg-surface hover:bg-surface2">
+                  <span className="text-body text-fg">{t.name}</span>
+                  <span className="text-caption text-fg-muted">{t.players.length} players ›</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
@@ -87,116 +320,9 @@ function RulesEditor({ settings, setSettings }: { settings: MatchSettings; setSe
       <ControlRow label="Allow running on wides">
         <Switch checked={settings.runsAllowedOnWide} onChange={(v) => patch({ runsAllowedOnWide: v })} />
       </ControlRow>
-      <ControlRow label="No runs on wide for ladies">
-        <Switch checked={settings.noRunsOnWideForLadies} onChange={(v) => patch({ noRunsOnWideForLadies: v })} />
-      </ControlRow>
       <ControlRow label="Free hit after no-ball">
         <Switch checked={settings.freeHitAfterNoBall} onChange={(v) => patch({ freeHitAfterNoBall: v })} />
       </ControlRow>
     </div>
-  );
-}
-
-export default function MatchSetup() {
-  const user = useAuth((s) => s.user)!;
-  const createMatch = useMatch((s) => s.createMatch);
-  const navigate = useNavigate();
-
-  const [nameA, setNameA] = useState('Team A');
-  const [nameB, setNameB] = useState('Team B');
-  const [playersA, setPlayersA] = useState<DraftPlayer[]>([]);
-  const [playersB, setPlayersB] = useState<DraftPlayer[]>([]);
-  const [overs, setOvers] = useState(6);
-  const [settings, setSettings] = useState<MatchSettings>(DEFAULT_SETTINGS);
-  const [showRules, setShowRules] = useState(false);
-
-  // add-player sheet
-  const [addTeam, setAddTeam] = useState<'A' | 'B' | null>(null);
-  const [draftName, setDraftName] = useState('');
-  const [draftCat, setDraftCat] = useState<PlayerCategory>('gents');
-
-  const ready = playersA.length >= 2 && playersB.length >= 2 && nameA.trim() && nameB.trim();
-
-  const commitPlayer = () => {
-    if (!draftName.trim() || !addTeam) return;
-    const player = { name: draftName.trim(), category: draftCat };
-    if (addTeam === 'A') setPlayersA((p) => [...p, player]);
-    else setPlayersB((p) => [...p, player]);
-    setDraftName('');
-  };
-
-  const toTeam = (id: string, name: string, drafts: DraftPlayer[]): Team => ({
-    id,
-    name: name.trim(),
-    players: drafts.map<Player>((d) => ({ id: crypto.randomUUID(), name: d.name, category: d.category })),
-  });
-
-  const start = async () => {
-    if (!ready) return;
-    const id = crypto.randomUUID().slice(0, 8);
-    await createMatch({
-      id,
-      ownerUid: user.uid,
-      createdAt: Date.now(),
-      status: 'toss',
-      settings: { ...settings, oversPerInnings: overs, playersPerTeam: Math.max(playersA.length, playersB.length) },
-      teamA: toTeam('teamA', nameA, playersA),
-      teamB: toTeam('teamB', nameB, playersB),
-      toss: null,
-      innings1: null,
-      innings2: null,
-      result: null,
-    });
-    navigate(`/match/${id}`);
-  };
-
-  return (
-    <Screen>
-      <StickyHeader title="New match" left={<BackButton onClick={() => navigate('/')} />} />
-
-      <div className="divide-line flex-1">
-        <TeamBlock label="Team 1" name={nameA} setName={setNameA} players={playersA} setPlayers={setPlayersA} onAdd={() => setAddTeam('A')} />
-        <TeamBlock label="Team 2" name={nameB} setName={setNameB} players={playersB} setPlayers={setPlayersB} onAdd={() => setAddTeam('B')} />
-
-        <section>
-          <SectionHeader>Overs per innings</SectionHeader>
-          <div className="px-4 pb-2">
-            <Segmented options={[2, 5, 6, 8, 10, 20].map((o) => ({ value: o, label: o }))} value={overs} onChange={setOvers} />
-          </div>
-        </section>
-
-        <section>
-          <button onClick={() => setShowRules((v) => !v)} className="section-header w-full">
-            <span>Match rules</span>
-            <span className="text-fg-faint">{showRules ? 'Hide' : 'Edit'}</span>
-          </button>
-          {showRules && <RulesEditor settings={settings} setSettings={setSettings} />}
-        </section>
-      </div>
-
-      <div className="sticky bottom-0 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-        <Button variant="primary" block disabled={!ready} onClick={start}>
-          {ready ? 'Start toss' : 'Add at least 2 players per team'}
-        </Button>
-      </div>
-
-      <Sheet open={addTeam !== null} onClose={() => setAddTeam(null)} title={`Add player · ${addTeam === 'A' ? nameA : nameB}`}>
-        <div className="space-y-3">
-          <TextInput value={draftName} onChange={(e) => setDraftName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && commitPlayer()} placeholder="Player name" autoFocus />
-          <Segmented
-            options={[
-              { value: 'gents', label: 'Gents' },
-              { value: 'ladies', label: 'Ladies' },
-            ]}
-            value={draftCat}
-            onChange={setDraftCat}
-          />
-          <Button variant="primary" block onClick={commitPlayer} disabled={!draftName.trim()}>
-            Add player
-          </Button>
-          <p className="text-center text-caption text-fg-faint">Keep adding — the sheet stays open.</p>
-        </div>
-      </Sheet>
-    </Screen>
   );
 }

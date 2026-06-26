@@ -4,16 +4,17 @@ import type { Innings, Match } from '../scoring/types';
 import { SectionHeader } from './ui';
 
 function Badge({ entry }: { entry: CommentaryEntry }) {
-  const map = {
-    four: { text: '4', cls: 'text-accent' },
-    six: { text: '6', cls: 'text-accent' },
-    wicket: { text: 'W', cls: 'text-error' },
-    extra: { text: '+', cls: 'text-fg-faint' },
-    normal: { text: '', cls: 'text-fg-faint' },
-  } as const;
-  const { text, cls } = map[entry.tone];
-  if (!text) return <span className="w-4 shrink-0" />;
-  return <span className={`nums w-4 shrink-0 text-center text-caption font-bold ${cls}`}>{text}</span>;
+  if (entry.tone === 'wicket') {
+    return <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-error text-[11px] font-bold text-white">W</span>;
+  }
+  if (entry.tone === 'four' || entry.tone === 'six') {
+    return (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent text-[11px] font-bold text-accent">
+        {entry.tone === 'four' ? '4' : '6'}
+      </span>
+    );
+  }
+  return <span className="w-6 shrink-0" />;
 }
 
 function Feed({ match, innings, title }: { match: Match; innings: Innings; title: string }) {

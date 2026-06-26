@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMatch } from '../store/matchStore';
-import type { Match, PlayerCategory } from '../scoring/types';
+import type { Match } from '../scoring/types';
 import { Button, Segmented, Sheet, TextInput } from './ui';
 
 /** Add a late-arriving player to either team mid-match. */
@@ -8,11 +8,10 @@ export default function PlayerManager({ open, onClose, match }: { open: boolean;
   const addPlayer = useMatch((s) => s.addPlayer);
   const [teamId, setTeamId] = useState(match.teamA.id);
   const [name, setName] = useState('');
-  const [cat, setCat] = useState<PlayerCategory>('gents');
 
   const submit = () => {
     if (!name.trim()) return;
-    addPlayer(teamId, name.trim(), cat);
+    addPlayer(teamId, name.trim(), 'gents');
     setName('');
   };
 
@@ -28,14 +27,6 @@ export default function PlayerManager({ open, onClose, match }: { open: boolean;
           onChange={setTeamId}
         />
         <TextInput value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} placeholder="Player name" autoFocus />
-        <Segmented
-          options={[
-            { value: 'gents', label: 'Gents' },
-            { value: 'ladies', label: 'Ladies' },
-          ]}
-          value={cat}
-          onChange={setCat}
-        />
         <Button variant="primary" block onClick={submit} disabled={!name.trim()}>
           Add player
         </Button>
