@@ -12,17 +12,17 @@ export default {
           DEFAULT: '#2A2F34', // subtle divider
           strong: '#373D43', // control border
         },
-        // green primary accent
+        // teal-green primary accent
         accent: {
-          DEFAULT: '#3FB950',
-          hover: '#46C75A',
+          DEFAULT: '#18AD92',
+          hover: '#1FC2A4',
         },
         // orange for boundary highlights
         boundary: {
           DEFAULT: '#F0883E',
           hover: '#F59B57',
         },
-        success: '#3FB950',
+        success: '#18AD92',
         error: '#F85149',
         fg: {
           DEFAULT: '#F0F3F5', // primary text
