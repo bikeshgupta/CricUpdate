@@ -4,10 +4,11 @@ import { useAuth } from '../store/authStore';
 import { useMatch } from '../store/matchStore';
 import { inningsState, teamById } from '../scoring/match';
 import type { InningsState, Match } from '../scoring/types';
-import { AccentButton, AppBar, GhostButton, GlassCard, MicroLabel, Screen } from '../components/ui';
+import { AccentButton, AppBar, GhostButton, GlassCard, MicroLabel, Screen, Tabs } from '../components/ui';
 import Scorecard from '../components/Scorecard';
 import ScoringPad from '../components/ScoringPad';
-import Summary from '../components/Summary';
+import InningsTable from '../components/InningsTable';
+import Commentary from '../components/Commentary';
 import TossFlow from '../components/TossFlow';
 import PlayerPicker from '../components/PlayerPicker';
 import PlayerManager from '../components/PlayerManager';
@@ -64,14 +65,80 @@ export default function LiveMatch() {
         right={<ShareBar matchId={match.id} compact />}
       />
 
-      {match.status === 'toss' &&
-        (isOwner ? <TossFlow match={match} /> : <WaitingForToss />)}
-
-      {(match.status === 'innings1' || match.status === 'innings2') &&
-        (isOwner ? <ScoringView match={match} /> : <ViewerView match={match} />)}
-
-      {match.status === 'complete' && <Summary match={match} />}
+      {match.status === 'toss' ? (
+        isOwner ? (
+          <TossFlow match={match} />
+        ) : (
+          <WaitingForToss />
+        )
+      ) : (
+        <MatchTabs match={match} isOwner={isOwner} />
+      )}
     </Screen>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tabbed match view (Cricbuzz-style): Live · Scorecard · Commentary
+// ---------------------------------------------------------------------------
+type TabId = 'live' | 'scorecard' | 'commentary';
+
+function MatchTabs({ match, isOwner }: { match: Match; isOwner: boolean }) {
+  const [tab, setTab] = useState<TabId>('live');
+  const isComplete = match.status === 'complete';
+
+  return (
+    <div>
+      <Tabs
+        tabs={[
+          { id: 'live', label: isComplete ? 'Result' : 'Live' },
+          { id: 'scorecard', label: 'Scorecard' },
+          { id: 'commentary', label: 'Commentary' },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
+      {tab === 'live' &&
+        (isComplete ? (
+          <ResultView match={match} />
+        ) : isOwner ? (
+          <ScoringView match={match} />
+        ) : (
+          <ViewerView match={match} />
+        ))}
+
+      {tab === 'scorecard' && <ScorecardTab match={match} />}
+      {tab === 'commentary' && <Commentary match={match} />}
+    </div>
+  );
+}
+
+function ScorecardTab({ match }: { match: Match }) {
+  const s1 = inningsState(match, 1);
+  const s2 = inningsState(match, 2);
+  if (!s1 && !s2) {
+    return <GlassCard className="text-center text-sm text-ink-faint">No scorecard yet.</GlassCard>;
+  }
+  return (
+    <div className="space-y-4">
+      {s1 && <InningsTable match={match} state={s1} />}
+      {s2 && <InningsTable match={match} state={s2} />}
+    </div>
+  );
+}
+
+function ResultView({ match }: { match: Match }) {
+  return (
+    <div className="space-y-4">
+      {match.result && (
+        <div className="glass p-5 text-center">
+          <MicroLabel className="mb-1">Result</MicroLabel>
+          <div className="text-xl font-extrabold text-accent">{match.result}</div>
+        </div>
+      )}
+      <ShareBar matchId={match.id} />
+    </div>
   );
 }
 

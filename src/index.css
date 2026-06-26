@@ -28,31 +28,37 @@
 }
 
 @layer components {
+  /* Solid elevated card (kept the .glass name for compatibility). */
   .glass {
-    @apply rounded-2xl border border-glass-border bg-glass-fill shadow-glass;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    @apply rounded-2xl border border-glass-border bg-surface shadow-card;
   }
 
   .micro-label {
-    @apply text-[11px] uppercase tracking-[0.18em] text-ink-muted;
+    @apply text-[11px] uppercase tracking-[0.16em] text-ink-muted;
   }
 
   .btn-accent {
-    @apply rounded-2xl bg-accent px-5 py-3.5 text-center font-semibold text-base
+    @apply rounded-xl bg-accent px-5 py-3.5 text-center font-semibold text-base
            shadow-glow transition active:scale-[0.98] disabled:opacity-40
            disabled:shadow-none;
   }
 
   .btn-ghost {
-    @apply rounded-2xl border border-glass-border bg-glass-fill px-5 py-3.5
+    @apply rounded-xl border border-glass-border bg-surface-raised px-5 py-3.5
            text-center font-medium text-ink transition active:scale-[0.98];
   }
 
   /* score-pad button */
   .pad-btn {
-    @apply glass flex items-center justify-center font-semibold text-ink
-           transition active:scale-95 select-none;
+    @apply flex items-center justify-center rounded-xl border border-glass-border
+           bg-surface-raised font-semibold text-ink shadow-card transition
+           active:scale-95 select-none;
+  }
+
+  /* inset input field */
+  .field {
+    @apply w-full rounded-xl border border-glass-border bg-surface-sunken px-3.5 py-2.5
+           text-ink outline-none placeholder:text-ink-faint focus:border-accent/50;
   }
 }
 

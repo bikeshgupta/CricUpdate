@@ -51,6 +51,8 @@ export interface BallEvent {
   /** Defaults to the striker if omitted. */
   dismissedPlayerId?: string;
   fielderId?: string;
+  /** Optional shot tag (id from SHOT_TYPES) used to enrich commentary. */
+  shot?: string;
 }
 
 export interface MatchSettings {

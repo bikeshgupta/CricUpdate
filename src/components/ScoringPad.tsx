@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMatch } from '../store/matchStore';
-import { playerById, teamById } from '../scoring/match';
+import { playerById, playerName, teamById } from '../scoring/match';
 import { ballToken } from '../scoring/engine';
+import { SHOT_TYPES } from '../scoring/commentary';
 import type { InningsState, Match, WicketType } from '../scoring/types';
 import { AccentButton, GhostButton, Sheet } from './ui';
 import PlayerPicker from './PlayerPicker';
@@ -26,7 +27,16 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
   const [sheet, setSheet] = useState<null | 'wide' | 'noball' | 'bye' | 'legbye' | 'wicket' | 'edit'>(
     null,
   );
+  // Boundary tapped → ask "where did it go?" before recording.
+  const [shotForRuns, setShotForRuns] = useState<number | null>(null);
   const close = () => setSheet(null);
+
+  const onRun = (n: number) => {
+    if (n === 4 || n === 6) setShotForRuns(n);
+    else recordBall({ batterRuns: n });
+  };
+
+  const strikerName = state.strikerId ? playerName(match, state.strikerId) : 'Batter';
 
   const strikerIsLady =
     !!state.strikerId && playerById(match, state.strikerId)?.category === 'ladies';
@@ -56,7 +66,7 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
         {RUN_VALUES.map((n) => (
           <button
             key={n}
-            onClick={() => recordBall({ batterRuns: n })}
+            onClick={() => onRun(n)}
             className={`pad-btn h-14 text-2xl ${n === 4 || n === 6 ? 'text-accent' : ''}`}
           >
             {n}
@@ -102,6 +112,36 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
       </div>
 
       {/* ---- sheets ---- */}
+      <Sheet
+        open={shotForRuns !== null}
+        onClose={() => setShotForRuns(null)}
+        title={`${strikerName} — ${shotForRuns === 6 ? 'SIX' : 'FOUR'}! Where did it go?`}
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {SHOT_TYPES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                recordBall({ batterRuns: shotForRuns!, shot: s.id });
+                setShotForRuns(null);
+              }}
+              className="rounded-xl border border-glass-border bg-surface-raised px-2 py-2.5 text-sm text-ink transition active:scale-95"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <GhostButton
+          onClick={() => {
+            recordBall({ batterRuns: shotForRuns! });
+            setShotForRuns(null);
+          }}
+          className="mt-3 w-full py-2.5 text-sm"
+        >
+          Skip — just {shotForRuns}
+        </GhostButton>
+      </Sheet>
+
       <Sheet open={sheet === 'wide'} onClose={close} title="Wide">
         {ladyNoRun ? (
           <div className="space-y-3 text-center">

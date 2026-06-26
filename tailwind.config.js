@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Midnight Glass palette
+        // Midnight palette — solid elevated surfaces (was see-through glass)
         base: '#0B0F14',
         base2: '#0E141B',
         accent: '#C7F94B', // electric lime — single accent
@@ -14,9 +14,15 @@ export default {
           muted: '#9AA4AE', // secondary text
           faint: '#5A646E', // tertiary / disabled
         },
+        // elevated card surfaces, clearly lighter than the background
+        surface: {
+          DEFAULT: '#161D27', // card
+          raised: '#1C2530', // raised control / hover
+          sunken: '#10151C', // inset (inputs)
+        },
         glass: {
-          fill: 'rgba(255,255,255,0.04)',
-          border: 'rgba(255,255,255,0.08)',
+          fill: '#161D27',
+          border: 'rgba(255,255,255,0.09)',
         },
       },
       fontFamily: {
@@ -29,6 +35,7 @@ export default {
       },
       boxShadow: {
         glass: '0 8px 30px rgba(0,0,0,0.35)',
+        card: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 6px 20px -8px rgba(0,0,0,0.6)',
         glow: '0 0 24px rgba(199,249,75,0.25)',
       },
       backgroundImage: {

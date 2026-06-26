@@ -141,6 +141,43 @@ export function Sheet({
   );
 }
 
+/** Cricbuzz-style segmented tab bar. */
+export function Tabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { id: T; label: string }[];
+  active: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="mb-4 flex rounded-xl border border-glass-border bg-surface-sunken p-1">
+      {tabs.map((t) => {
+        const isActive = t.id === active;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className="relative flex-1 rounded-lg py-2 text-sm font-semibold transition"
+          >
+            {isActive && (
+              <motion.span
+                layoutId="tab-pill"
+                className="absolute inset-0 rounded-lg bg-accent"
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              />
+            )}
+            <span className={`relative ${isActive ? 'text-base' : 'text-ink-muted'}`}>
+              {t.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Chip({
   children,
   selected,

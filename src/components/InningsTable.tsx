@@ -1,9 +1,8 @@
-import { inningsState, playerName, teamById } from '../scoring/match';
+import { playerName, teamById } from '../scoring/match';
 import type { InningsState, Match } from '../scoring/types';
 import { GlassCard, MicroLabel } from './ui';
-import ShareBar from './ShareBar';
 
-function wicketLabel(state: InningsState, match: Match, batterId: string): string {
+export function wicketLabel(state: InningsState, match: Match, batterId: string): string {
   const b = state.batters[batterId];
   if (!b?.out) return 'not out';
   switch (b.wicketType) {
@@ -22,7 +21,7 @@ function wicketLabel(state: InningsState, match: Match, batterId: string): strin
   }
 }
 
-function InningsTable({ match, state }: { match: Match; state: InningsState }) {
+export default function InningsTable({ match, state }: { match: Match; state: InningsState }) {
   const battingTeam = teamById(match, state.battingTeamId);
 
   return (
@@ -35,14 +34,25 @@ function InningsTable({ match, state }: { match: Match; state: InningsState }) {
         </span>
       </div>
 
+      {/* column header */}
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-ink-faint">
+        <span>Batter</span>
+        <span>R (B)</span>
+      </div>
+
       {/* batting */}
       <div className="space-y-1.5">
         {state.battingOrder.map((id) => {
           const b = state.batters[id];
+          const isStriker = id === state.strikerId;
+          const isAtCrease = id === state.strikerId || id === state.nonStrikerId;
           return (
             <div key={id} className="flex items-center justify-between text-sm">
               <div className="min-w-0">
-                <span className="text-ink">{playerName(match, id)}</span>
+                <span className={isAtCrease ? 'font-semibold text-ink' : 'text-ink'}>
+                  {playerName(match, id)}
+                  {isStriker && <span className="text-accent"> *</span>}
+                </span>
                 <span className="ml-2 text-[11px] text-ink-faint">{wicketLabel(state, match, id)}</span>
               </div>
               <span className="nums shrink-0 text-ink-muted">
@@ -59,9 +69,13 @@ function InningsTable({ match, state }: { match: Match; state: InningsState }) {
       </div>
 
       {/* bowling */}
-      <div className="border-t border-glass-border pt-2">
+      <div className="border-t border-glass-border pt-2.5">
         <MicroLabel className="mb-1.5">Bowling</MicroLabel>
-        <div className="space-y-1">
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-ink-faint">
+          <span>Bowler</span>
+          <span>O–M–R–W</span>
+        </div>
+        <div className="mt-1 space-y-1">
           {Object.values(state.bowlers)
             .filter((b) => b.ballsBowled > 0)
             .map((b) => (
@@ -76,24 +90,5 @@ function InningsTable({ match, state }: { match: Match; state: InningsState }) {
         </div>
       </div>
     </GlassCard>
-  );
-}
-
-export default function Summary({ match }: { match: Match }) {
-  const s1 = inningsState(match, 1);
-  const s2 = inningsState(match, 2);
-
-  return (
-    <div className="space-y-4">
-      {match.result && (
-        <div className="glass p-5 text-center">
-          <MicroLabel className="mb-1">Result</MicroLabel>
-          <div className="text-xl font-extrabold text-accent">{match.result}</div>
-        </div>
-      )}
-      {s1 && <InningsTable match={match} state={s1} />}
-      {s2 && <InningsTable match={match} state={s2} />}
-      <ShareBar matchId={match.id} />
-    </div>
   );
 }

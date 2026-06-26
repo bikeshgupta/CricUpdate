@@ -183,6 +183,7 @@ export const useMatch = create<MatchState>((set, get) => ({
       wicketType: input.wicketType,
       dismissedPlayerId: input.dismissedPlayerId ?? (input.isWicket ? striker : undefined),
       fielderId: input.fielderId,
+      shot: input.shot,
     };
     const newInnings: Innings = { ...innings, balls: [...innings.balls, ball] };
     const updated = reconcile(setInnings(match, which, newInnings));
