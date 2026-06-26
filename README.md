@@ -1,20 +1,20 @@
-# CricUpdate
+# MatchOn — by SymPal games
 
-A simple, ad-free, low-friction cricket match organizer & live scorer. Spin up a
-casual or corporate match, do an animated toss, and score it **ball by ball** —
-with the real-world quirks (configurable wides/no-balls, gender-based wide rules,
-mid-match player changes, and correcting the last entry).
+A clean, ad-free, low-friction cricket match organizer & live scorer. Spin up a
+casual or corporate match, do the toss, and score it **ball by ball** — with the
+real-world quirks (configurable wides/no-balls, mid-match player changes, and
+correcting the last entry) — then share a live link anyone can follow.
 
-> **Phase 1 — UI-first build with mock data.** "Continue with Google" is faked and
-> matches live in `localStorage`. The data layer sits behind a single
-> `dataService` interface so a real Firebase backend (Auth + Firestore) can be
-> swapped in later with no UI changes.
+> **Backend:** real **Firebase** (Google sign-in + Firestore + live `onSnapshot`)
+> when `VITE_FIREBASE_*` env vars are set; otherwise an in-memory mock so local
+> development works with no setup. Both sit behind one `dataService` interface, so
+> the UI never changes. See **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**.
 
 ## Stack
 - **React + TypeScript + Vite**, installable **PWA**
-- **Tailwind CSS** — dense, divider-based dark UI (GitHub/Linear-inspired:
-  `#0D1117` background, `#161B22` surface, `#2F81F7` accent), compact type,
-  44px controls, no gradients/shadows
+- **Firebase** — Auth (Google), Firestore storage, real-time live sharing
+- **Tailwind CSS** — dense, divider-based dark UI (`#0D1117` bg, `#161B22`
+  surface, teal `#16A085` accent), compact type, no gradients/shadows
 - **Framer Motion** — subtle 150ms fade/slide transitions, coin-flip toss
 - **Zustand** — match state; **Vitest** — scoring-engine tests
 

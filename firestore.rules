@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Matches are publicly readable (so anyone with the share link can watch
+    // live), but only the signed-in owner may create or modify them.
+    match /matches/{matchId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Optional per-user profile docs.
+    match /users/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

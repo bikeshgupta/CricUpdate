@@ -31,7 +31,12 @@ export interface DataService {
   listMyMatches(uid: string): Promise<Match[]>;
 }
 
-// The active provider. Swap this import for `firebaseDataService` later.
+// Provider auto-selection: use real Firebase when VITE_FIREBASE_* env vars are
+// configured, otherwise fall back to the in-memory mock (local demo).
+import { firebaseEnabled } from '../firebase/config';
 import { mockDataService } from './mockDataService';
+import { firebaseDataService } from './firebaseDataService';
 
-export const dataService: DataService = mockDataService;
+export const usingFirebase = firebaseEnabled;
+
+export const dataService: DataService = firebaseEnabled ? firebaseDataService : mockDataService;

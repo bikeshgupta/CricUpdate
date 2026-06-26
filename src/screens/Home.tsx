@@ -5,6 +5,7 @@ import { dataService } from '../services/dataService';
 import { inningsState } from '../scoring/match';
 import type { Match } from '../scoring/types';
 import { Button, Screen, SectionHeader, StickyHeader, TeamBadge } from '../components/ui';
+import { Wordmark } from '../components/Logo';
 
 function relativeDate(ts: number): string {
   const days = Math.floor((Date.now() - ts) / 86_400_000);
@@ -80,7 +81,7 @@ export default function Home() {
   return (
     <Screen>
       <StickyHeader
-        title="CricUpdate"
+        title={<Wordmark size={18} />}
         right={
           <button onClick={signOut} className="btn btn-ghost btn-sm">
             Sign out

@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { Button, Screen } from '../components/ui';
+import { BrandLockup } from '../components/Logo';
 import { sampleMatches } from '../mocks/sampleData';
+import { usingFirebase } from '../services/dataService';
 
 function GoogleGlyph() {
   return (
@@ -24,14 +26,9 @@ export default function Login() {
     <Screen>
       <div className="flex flex-1 flex-col px-6">
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-line-strong bg-surface">
-            <div className="relative h-5 w-5 rounded-full border-2 border-accent">
-              <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
-            </div>
-          </div>
-          <h1 className="text-[22px] font-semibold tracking-tight text-fg">CricUpdate</h1>
-          <p className="mt-1.5 max-w-[16rem] text-body text-fg-muted">
-            Ball-by-ball cricket scoring. No ads, no clutter.
+          <BrandLockup />
+          <p className="mt-5 max-w-[17rem] text-body text-fg-muted">
+            Ball-by-ball cricket scoring with live shareable links. No ads, no clutter.
           </p>
         </div>
 
@@ -40,12 +37,12 @@ export default function Login() {
             <GoogleGlyph />
             Continue with Google
           </Button>
-          {demoId && (
+          {!usingFirebase && demoId && (
             <Button variant="ghost" block onClick={() => navigate(`/match/${demoId}`)}>
               Have a link? Watch a live match
             </Button>
           )}
-          <p className="text-center text-caption text-fg-faint">Demo build — sign-in is mocked.</p>
+          {!usingFirebase && <p className="text-center text-caption text-fg-faint">Demo build — sign-in is mocked.</p>}
         </div>
       </div>
     </Screen>

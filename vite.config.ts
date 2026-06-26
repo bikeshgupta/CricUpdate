@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'CricUpdate',
-        short_name: 'CricUpdate',
-        description: 'Simple, ad-free cricket match organizer & live scorer',
+        name: 'MatchOn',
+        short_name: 'MatchOn',
+        description: 'MatchOn by SymPal games — ball-by-ball cricket scoring with live shareable links',
         theme_color: '#0D1117',
         background_color: '#0D1117',
         display: 'standalone',
