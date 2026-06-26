@@ -9,25 +9,22 @@ export default function Scoreboard({ match, state }: { match: Match; state: Inni
   const bowler = state.currentBowlerId ? state.bowlers[state.currentBowlerId] : null;
 
   return (
-    <div className="px-4 pb-3 pt-0.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="truncate text-team text-fg">{battingTeam.name}</span>
-        <span className="nums shrink-0 text-fg">
-          <span className="text-[26px] font-bold leading-none">{state.totalRuns}</span>
-          <span className="text-body text-fg-muted">/{state.wickets}</span>
-        </span>
-      </div>
-
-      <div className="mt-1 flex items-center justify-between text-caption text-fg-muted">
-        <span className="nums">
-          {state.oversText} ov · RR {state.runRate.toFixed(2)}
-          {state.freeHit && <span className="ml-2 font-semibold text-accent">FREE HIT</span>}
-        </span>
-        {state.target != null && state.runsRequired != null && !state.isComplete && (
-          <span className="nums text-fg">
-            Need {state.runsRequired} off {state.ballsRemaining}
-          </span>
-        )}
+    <div className="px-4 pb-3 pt-1">
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-caption font-medium uppercase tracking-wide text-fg-muted">{battingTeam.name}</div>
+          <div className="nums mt-0.5 leading-none text-fg">
+            <span className="text-[30px] font-bold">{state.totalRuns}</span>
+            <span className="text-[18px] font-semibold text-fg-muted">/{state.wickets}</span>
+          </div>
+        </div>
+        <div className="shrink-0 text-right text-caption text-fg-muted">
+          <div className="nums">{state.oversText} ov · RR {state.runRate.toFixed(2)}</div>
+          {state.freeHit && <div className="font-semibold text-accent">FREE HIT</div>}
+          {state.target != null && state.runsRequired != null && !state.isComplete && (
+            <div className="nums text-fg">Need {state.runsRequired} off {state.ballsRemaining}</div>
+          )}
+        </div>
       </div>
 
       {!state.isComplete && (

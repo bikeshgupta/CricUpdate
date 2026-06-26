@@ -15,6 +15,7 @@ import {
   StickyHeader,
   Stepper,
   Switch,
+  TeamBadge,
   TextInput,
 } from '../components/ui';
 
@@ -22,11 +23,6 @@ type DraftTeam = Team; // { id, name, players: Player[] }
 
 function newTeam(name = ''): DraftTeam {
   return { id: crypto.randomUUID(), name, players: [] };
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
 }
 
 /** Distinct teams (by name) seen in the user's past matches, most-recent first. */
@@ -116,7 +112,7 @@ export default function MatchSetup() {
 
       {step === 'pick' ? (
         <div className="flex-1">
-          <div className="flex items-stretch gap-3 px-4 py-8">
+          <div className="flex items-stretch gap-3 px-4 pb-2 pt-5">
             <TeamCard team={teamA} onTap={() => setPickSlot('A')} />
             <div className="flex items-center text-body font-semibold text-fg-muted">vs</div>
             <TeamCard team={teamB} onTap={() => setPickSlot('B')} />
@@ -124,7 +120,7 @@ export default function MatchSetup() {
           <div className="px-4 text-center text-caption text-fg-faint">
             Pick an existing team or create a new one for each side.
           </div>
-          <div className="sticky bottom-0 mt-8 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <div className="sticky bottom-0 mt-5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <Button variant="primary" block disabled={!teamsChosen} onClick={() => setStep('roster')}>
               {teamsChosen ? 'Continue' : 'Choose both teams'}
             </Button>
@@ -194,17 +190,17 @@ function TeamCard({ team, onTap }: { team: DraftTeam | null; onTap: () => void }
   return (
     <button
       onClick={onTap}
-      className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-line-strong bg-surface px-3 py-8 transition duration-150 active:opacity-80"
+      className="flex flex-1 flex-col items-center justify-center gap-2 rounded-[10px] border border-line-strong bg-surface px-3 py-5 transition duration-150 active:opacity-80"
     >
       {team ? (
         <>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-body font-semibold text-accent">{initials(team.name || 'New')}</div>
-          <div className="text-center text-body font-semibold text-fg">{team.name || 'New team'}</div>
-          <div className="text-caption text-fg-muted">{team.players.length} players · tap to change</div>
+          <TeamBadge name={team.name || 'New'} size="lg" />
+          <div className="line-clamp-1 text-center text-item font-medium text-fg">{team.name || 'New team'}</div>
+          <div className="text-caption font-medium text-fg-muted">{team.players.length} players</div>
         </>
       ) : (
         <>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-line-strong text-2xl text-fg-muted">+</div>
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line-strong text-2xl text-fg-muted">+</div>
           <div className="text-body text-fg-muted">Add team</div>
         </>
       )}

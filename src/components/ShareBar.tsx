@@ -2,13 +2,14 @@ import { useState } from 'react';
 
 export default function ShareBar({ matchId, compact }: { matchId: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const url = `${window.location.origin}/match/${matchId}`;
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
     } catch {
-      /* clipboard may be blocked; link is still visible */
+      /* clipboard may be blocked; link is still visible when expanded */
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
@@ -23,14 +24,17 @@ export default function ShareBar({ matchId, compact }: { matchId: string; compac
   }
 
   return (
-    <div className="flex items-center gap-2 border-y border-line px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <div className="text-caption text-fg-muted">Live share link</div>
-        <div className="truncate text-body text-fg">{url}</div>
+    <div className="border-b border-line">
+      <div className="row justify-between">
+        <button onClick={() => setExpanded((v) => !v)} className="flex items-center gap-1.5 text-body text-fg">
+          Share match
+          <span className={`text-fg-faint transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`}>⌄</span>
+        </button>
+        <button onClick={copy} className="btn btn-secondary btn-sm">
+          {copied ? 'Copied' : 'Copy link'}
+        </button>
       </div>
-      <button onClick={copy} className="btn btn-secondary btn-sm shrink-0">
-        {copied ? 'Copied' : 'Copy'}
-      </button>
+      {expanded && <div className="truncate px-4 pb-3 text-caption text-fg-muted">{url}</div>}
     </div>
   );
 }

@@ -28,9 +28,9 @@
 }
 
 @layer components {
-  /* ---- buttons (44px) ---- */
+  /* ---- buttons (48px, 10px radius) ---- */
   .btn {
-    @apply inline-flex h-11 select-none items-center justify-center gap-2 rounded-lg
+    @apply inline-flex h-12 select-none items-center justify-center gap-2 rounded-[10px]
            px-4 text-body font-medium transition duration-150 active:opacity-80
            disabled:pointer-events-none disabled:opacity-40;
   }
@@ -47,7 +47,7 @@
     @apply text-fg-muted hover:bg-surface hover:text-fg;
   }
   .btn-sm {
-    @apply h-8 px-3 text-caption;
+    @apply h-9 px-3 text-caption;
   }
 
   /* ---- inputs (44px, 8px radius) ---- */
@@ -57,9 +57,9 @@
            focus:border-accent;
   }
 
-  /* ---- section header (13px medium) ---- */
+  /* ---- section header (16px medium, muted) ---- */
   .section-header {
-    @apply flex items-center justify-between px-4 py-2 text-label font-medium text-fg-muted;
+    @apply flex items-center justify-between px-4 pb-1.5 pt-4 text-section font-medium text-fg-muted;
   }
 
   /* ---- segmented control ---- */
@@ -77,9 +77,14 @@
     @apply bg-accent text-white;
   }
 
-  /* ---- dense list row ---- */
+  /* ---- dense list row (16px h-pad, 12px v-pad) ---- */
   .row {
-    @apply flex min-h-[44px] items-center gap-3 px-4;
+    @apply flex items-center gap-3 px-4 py-3;
+  }
+
+  /* ---- rounded-square team badge ---- */
+  .badge-team {
+    @apply flex shrink-0 items-center justify-center rounded-lg font-semibold uppercase text-white;
   }
 }
 

@@ -27,8 +27,8 @@ function Feed({ match, innings, title }: { match: Match; innings: Innings; title
       ) : (
         <div className="divide-line border-y border-line">
           {feed.map((e) => (
-            <div key={e.id} className="flex items-start gap-3 px-4 py-2.5">
-              <span className="nums w-7 shrink-0 pt-px text-caption text-fg-faint">{e.over}</span>
+            <div key={e.id} className="flex items-start gap-3 px-4 py-2">
+              <span className="nums w-8 shrink-0 pt-0.5 text-right text-caption tabular-nums text-fg-faint">{e.over}</span>
               <Badge entry={e} />
               <span
                 className={`text-body ${

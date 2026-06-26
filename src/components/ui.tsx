@@ -162,6 +162,32 @@ export function ControlRow({ label, hint, children }: { label: ReactNode; hint?:
   );
 }
 
+// Rounded-square team badge with a deterministic, muted background colour.
+const BADGE_COLORS = ['#1F6F66', '#3B5BA5', '#97653A', '#6B4E9E', '#3E7C4F', '#9E4A57', '#2E7D8A', '#7A6A3A'];
+
+function hashIndex(str: string, mod: number): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h % mod;
+}
+
+export function TeamBadge({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
+  const sizes = { sm: 'h-8 w-8 text-[12px]', md: 'h-10 w-10 text-[14px]', lg: 'h-14 w-14 text-[20px]' };
+  const bg = BADGE_COLORS[hashIndex(name || '?', BADGE_COLORS.length)];
+  const initials =
+    (name || '?')
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('') || '?';
+  return (
+    <span className={`badge-team ${sizes[size]}`} style={{ backgroundColor: bg }}>
+      {initials}
+    </span>
+  );
+}
+
 export function Tag({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'accent' | 'success' | 'error' }) {
   const tones = {
     neutral: 'border-line-strong text-fg-muted',
@@ -197,10 +223,10 @@ export function Tabs<T extends string>({
           <button
             key={t.id}
             onClick={() => onChange(t.id)}
-            className={`relative px-3 py-2.5 text-body font-medium transition duration-150 ${isActive ? 'text-fg' : 'text-fg-muted hover:text-fg'}`}
+            className={`relative px-3 py-2 text-body transition duration-150 ${isActive ? 'font-medium text-fg' : 'font-normal text-fg-muted hover:text-fg'}`}
           >
             {t.label}
-            {isActive && <motion.span layoutId="tab-underline" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" transition={{ duration: 0.15 }} />}
+            {isActive && <motion.span layoutId="tab-underline" className="absolute inset-x-3 -bottom-px h-0.5 bg-accent" transition={{ duration: 0.15 }} />}
           </button>
         );
       })}

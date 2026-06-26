@@ -4,30 +4,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        // neutral grey base
-        bg: '#131517',
-        surface: '#1B1E21',
-        surface2: '#23272B',
+        bg: '#0D1117',
+        surface: '#161B22',
+        surface2: '#1C232C',
         line: {
-          DEFAULT: '#2A2F34', // subtle divider
-          strong: '#373D43', // control border
+          DEFAULT: 'rgba(255,255,255,0.08)', // subtle divider
+          strong: 'rgba(255,255,255,0.14)', // control border
         },
-        // teal-green primary accent
+        // calm corporate teal accent
         accent: {
-          DEFAULT: '#18AD92',
-          hover: '#1FC2A4',
+          DEFAULT: '#16A085',
+          hover: '#19B394',
         },
-        // orange for boundary highlights
+        // muted orange for boundary highlights
         boundary: {
-          DEFAULT: '#F0883E',
-          hover: '#F59B57',
+          DEFAULT: '#D9803B',
+          hover: '#E5934F',
         },
-        success: '#18AD92',
+        success: '#2EA043',
         error: '#F85149',
         fg: {
-          DEFAULT: '#F0F3F5', // primary text
-          muted: '#9BA3AB', // secondary text
-          faint: '#6B7178', // tertiary / placeholder
+          DEFAULT: '#F0F6FC', // primary text
+          muted: '#8B949E', // secondary text
+          faint: '#6E7681', // tertiary / placeholder
         },
       },
       fontFamily: {
@@ -35,12 +34,15 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       fontSize: {
-        // compact scale
+        // consistent compact scale
         caption: ['12px', { lineHeight: '16px' }],
         body: ['14px', { lineHeight: '20px' }],
+        item: ['15px', { lineHeight: '20px' }],
         label: ['13px', { lineHeight: '18px' }],
-        team: ['18px', { lineHeight: '22px', fontWeight: '600' }],
-        score: ['30px', { lineHeight: '32px', fontWeight: '700' }],
+        section: ['16px', { lineHeight: '22px' }],
+        title: ['22px', { lineHeight: '28px', fontWeight: '600' }],
+        team: ['15px', { lineHeight: '20px', fontWeight: '600' }],
+        score: ['32px', { lineHeight: '34px', fontWeight: '700' }],
       },
       borderRadius: {
         lg: '8px',

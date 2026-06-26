@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'CricUpdate',
         short_name: 'CricUpdate',
         description: 'Simple, ad-free cricket match organizer & live scorer',
-        theme_color: '#131517',
-        background_color: '#131517',
+        theme_color: '#0D1117',
+        background_color: '#0D1117',
         display: 'standalone',
         start_url: '/',
         icons: [
