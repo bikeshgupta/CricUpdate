@@ -48,7 +48,25 @@ firebase deploy --only hosting     # serves dist/ at https://<project>.web.app
 
 ## 5. Authorized domains
 In **Authentication → Settings → Authorized domains**, ensure `localhost` and your
-hosting domain (`<project>.web.app`) are listed so Google sign-in popups work.
+hosting domain (`<project>.web.app` and/or your Vercel domain) are listed so Google
+sign-in popups work.
+
+## Deploying on Vercel (instead of Firebase Hosting)
+You can host the frontend on Vercel and keep Firestore/Auth on Firebase:
+
+1. Import the repo in Vercel — the **Vite** preset is auto-detected
+   (build `npm run build`, output `dist`). `vercel.json` already rewrites all
+   routes to `index.html` so deep links like `/match/<id>` work on refresh.
+2. **Settings → Environment Variables**: add each `VITE_FIREBASE_*` value (the
+   same ones from `.env`). They are read at build time, so **redeploy** after
+   adding or changing them.
+3. Add your Vercel domain(s) (`*.vercel.app` preview + production + any custom
+   domain) under Firebase **Auth → Settings → Authorized domains**.
+4. Deploy the Firestore rules once from your machine (Vercel only hosts the
+   frontend): `firebase deploy --only firestore:rules`.
+
+> The `VITE_*` values are embedded in the client bundle either way — that's
+> expected for Firebase web apps; access is controlled by the security rules.
 
 ## How live sharing works
 Each match is one Firestore document at `matches/{id}`. The scorer writes a ball;
