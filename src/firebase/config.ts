@@ -26,9 +26,15 @@ let dbInstance: Firestore | undefined;
 if (firebaseEnabled) {
   app = initializeApp(config);
   authInstance = getAuth(app);
-  // ignoreUndefinedProperties lets us store match objects that contain optional
-  // fields (e.g. ball.shot, wicketType) without stripping them by hand.
-  dbInstance = initializeFirestore(app, { ignoreUndefinedProperties: true });
+  dbInstance = initializeFirestore(app, {
+    // Store match objects with optional fields (ball.shot, wicketType, …)
+    // without stripping undefined by hand.
+    ignoreUndefinedProperties: true,
+    // Auto-detect when the default streaming transport is blocked (some mobile /
+    // corporate networks) and fall back to long-polling, so onSnapshot live
+    // updates keep flowing without a manual page refresh.
+    experimentalAutoDetectLongPolling: true,
+  });
 }
 
 export const auth = authInstance;

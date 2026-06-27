@@ -4,9 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#0D1117',
-        surface: '#161B22',
-        surface2: '#1C232C',
+        // neutral dark grey (no blue tint)
+        bg: '#161616',
+        surface: '#1F1F1F',
+        surface2: '#272727',
         line: {
           DEFAULT: 'rgba(255,255,255,0.08)', // subtle divider
           strong: 'rgba(255,255,255,0.14)', // control border
@@ -24,9 +25,9 @@ export default {
         success: '#2EA043',
         error: '#F85149',
         fg: {
-          DEFAULT: '#F0F6FC', // primary text
-          muted: '#8B949E', // secondary text
-          faint: '#6E7681', // tertiary / placeholder
+          DEFAULT: '#F2F2F3', // primary text (neutral)
+          muted: '#9B9B9D', // secondary text (neutral grey)
+          faint: '#6B6B6D', // tertiary / placeholder
         },
       },
       fontFamily: {
