@@ -1,8 +1,7 @@
 // ---------------------------------------------------------------------------
-// The single contract the whole UI talks to. Today it is backed by an in-memory
-// / localStorage mock (`mockDataService`). Later, a `firebaseDataService` can
-// implement this same interface (Auth + Firestore onSnapshot) and the provider
-// swap is a one-liner — no UI changes.
+// The single contract the whole UI talks to. Backed by Firebase (Auth +
+// Firestore onSnapshot). `backendReady` is true only when the VITE_FIREBASE_*
+// env vars are configured; the app shows a setup notice otherwise.
 // ---------------------------------------------------------------------------
 
 import type { Match } from '../scoring/types';
@@ -16,7 +15,7 @@ export interface AppUser {
 }
 
 export interface DataService {
-  // --- auth (faked for now: one click signs in a dummy user) ---
+  // --- auth (Google) ---
   signInWithGoogle(): Promise<AppUser>;
   signOut(): Promise<void>;
   getCurrentUser(): AppUser | null;
@@ -31,12 +30,10 @@ export interface DataService {
   listMyMatches(uid: string): Promise<Match[]>;
 }
 
-// Provider auto-selection: use real Firebase when VITE_FIREBASE_* env vars are
-// configured, otherwise fall back to the in-memory mock (local demo).
 import { firebaseEnabled } from '../firebase/config';
-import { mockDataService } from './mockDataService';
 import { firebaseDataService } from './firebaseDataService';
 
-export const usingFirebase = firebaseEnabled;
+/** True when Firebase is configured (VITE_FIREBASE_* env vars present). */
+export const backendReady = firebaseEnabled;
 
-export const dataService: DataService = firebaseEnabled ? firebaseDataService : mockDataService;
+export const dataService: DataService = firebaseDataService;

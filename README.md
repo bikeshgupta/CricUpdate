@@ -5,10 +5,9 @@ casual or corporate match, do the toss, and score it **ball by ball** — with t
 real-world quirks (configurable wides/no-balls, mid-match player changes, and
 correcting the last entry) — then share a live link anyone can follow.
 
-> **Backend:** real **Firebase** (Google sign-in + Firestore + live `onSnapshot`)
-> when `VITE_FIREBASE_*` env vars are set; otherwise an in-memory mock so local
-> development works with no setup. Both sit behind one `dataService` interface, so
-> the UI never changes. See **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**.
+> **Backend:** **Firebase** — Google sign-in + Firestore storage + live
+> `onSnapshot` sharing. Configure your project's `VITE_FIREBASE_*` env vars (the
+> app shows a setup notice until you do). See **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**.
 
 ## Stack
 - **React + TypeScript + Vite**, installable **PWA**
@@ -27,24 +26,25 @@ an append-only `BallEvent[]` log; the full scorecard is *derived* by replaying i
 ```
 src/
   scoring/    types, engine (computeInnings), match helpers, engine.test.ts
-  services/   dataService interface + mockDataService (localStorage, faked auth)
-  mocks/      dummy user + sample matches (delete when Firebase lands)
+  firebase/   config (env-driven init)
+  services/   dataService interface + firebaseDataService (auth + Firestore)
   store/      authStore, matchStore (records balls, edit/undo, transitions)
-  components/ Scorecard, ScoringPad, CoinToss, TossFlow, Summary, …
+  components/ Scoreboard, ScoringPad, CoinToss, TossFlow, Commentary, Squads, …
   screens/    Login, Home, MatchSetup, LiveMatch
 ```
 
 ## Develop
 ```bash
 npm install
+cp .env.example .env   # then fill in your Firebase config (see FIREBASE_SETUP.md)
 npm run dev      # http://localhost:5173
 npm test         # scoring engine unit tests
 npm run build    # type-check + production build
 ```
 
 ## Features
-- Add two teams + players (name + gents/ladies category), set overs and rules
-- Animated toss → choose bat/bowl → pick openers & bowler
+- Pick saved teams or create new ones, add players, set overs and rules
+- Toss (animated coin flip or set manually) → pick openers & bowler
 - Ball-by-ball scoring: runs, wides, no-balls, byes, leg-byes, all wicket types
 - Configurable rules: wide/no-ball runs, re-bowl, free hit, **no runs on wide for
   ladies**, allow running on wides

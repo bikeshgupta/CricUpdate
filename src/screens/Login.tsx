@@ -1,9 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../store/authStore';
 import { Button, Screen } from '../components/ui';
 import { BrandLockup } from '../components/Logo';
-import { sampleMatches } from '../mocks/sampleData';
-import { usingFirebase } from '../services/dataService';
 
 function GoogleGlyph() {
   return (
@@ -19,8 +17,25 @@ function GoogleGlyph() {
 
 export default function Login() {
   const signIn = useAuth((s) => s.signIn);
-  const navigate = useNavigate();
-  const demoId = sampleMatches[0]?.id;
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleSignIn = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await signIn();
+    } catch (e) {
+      const code = (e as { code?: string })?.code ?? '';
+      setError(
+        code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request'
+          ? 'Sign-in was cancelled.'
+          : 'Could not sign in. Please try again.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Screen>
@@ -33,16 +48,14 @@ export default function Login() {
         </div>
 
         <div className="space-y-3 pb-10">
-          <Button variant="primary" block onClick={signIn}>
+          <Button variant="primary" block onClick={handleSignIn} disabled={busy}>
             <GoogleGlyph />
-            Continue with Google
+            {busy ? 'Signing in…' : 'Continue with Google'}
           </Button>
-          {!usingFirebase && demoId && (
-            <Button variant="ghost" block onClick={() => navigate(`/match/${demoId}`)}>
-              Have a link? Watch a live match
-            </Button>
-          )}
-          {!usingFirebase && <p className="text-center text-caption text-fg-faint">Demo build — sign-in is mocked.</p>}
+          {error && <p className="text-center text-caption text-error">{error}</p>}
+          <p className="text-center text-caption text-fg-faint">
+            Sign in to create matches. Anyone with a share link can watch live — no account needed.
+          </p>
         </div>
       </div>
     </Screen>

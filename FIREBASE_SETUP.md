@@ -1,8 +1,8 @@
 # MatchOn — Firebase setup
 
 MatchOn uses Firebase for **Google sign-in**, **Firestore storage**, and
-**real-time live score sharing**. Without these env vars the app runs an
-in-memory mock; once you add them it switches to the real backend automatically.
+**real-time live score sharing**. The app requires these env vars — until they are
+set it shows a short "configure Firebase" notice instead of the app.
 
 ## 1. Create a Firebase project
 1. Go to <https://console.firebase.google.com> → **Add project**.
