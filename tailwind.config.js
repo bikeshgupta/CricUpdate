@@ -4,30 +4,31 @@ export default {
   theme: {
     extend: {
       colors: {
-        // neutral dark grey (no blue tint)
-        bg: '#161616',
-        surface: '#1F1F1F',
-        surface2: '#272727',
+        // matte graphite
+        bg: '#1E1E20',
+        surface: '#2A2A2D',
+        surface2: '#343438', // elevated surface
         line: {
-          DEFAULT: 'rgba(255,255,255,0.08)', // subtle divider
-          strong: 'rgba(255,255,255,0.14)', // control border
+          DEFAULT: 'rgba(255,255,255,0.06)', // soft grey divider
+          strong: 'rgba(255,255,255,0.12)', // control border
         },
-        // calm corporate teal accent
+        // warm champagne gold accent
         accent: {
-          DEFAULT: '#16A085',
-          hover: '#19B394',
+          DEFAULT: '#C8A95A',
+          hover: '#D9BA6A',
+          pressed: '#B8933E',
         },
-        // muted orange for boundary highlights
+        // boundaries share the gold accent (no second colour)
         boundary: {
-          DEFAULT: '#D9803B',
-          hover: '#E5934F',
+          DEFAULT: '#C8A95A',
+          hover: '#D9BA6A',
         },
-        success: '#2EA043',
-        error: '#F85149',
+        success: '#46B97A',
+        error: '#D9534F',
         fg: {
-          DEFAULT: '#F2F2F3', // primary text (neutral)
-          muted: '#9B9B9D', // secondary text (neutral grey)
-          faint: '#6B6B6D', // tertiary / placeholder
+          DEFAULT: '#F6F6F6', // primary text
+          muted: '#A3A3A8', // secondary text
+          faint: '#6E6E73', // tertiary / placeholder
         },
       },
       fontFamily: {
@@ -43,13 +44,14 @@ export default {
         section: ['16px', { lineHeight: '22px' }],
         title: ['22px', { lineHeight: '28px', fontWeight: '600' }],
         team: ['15px', { lineHeight: '20px', fontWeight: '600' }],
-        score: ['32px', { lineHeight: '34px', fontWeight: '700' }],
+        score: ['40px', { lineHeight: '42px', fontWeight: '600' }],
       },
       borderRadius: {
-        lg: '8px',
+        lg: '10px',
         md: '6px',
       },
       transitionDuration: {
+        100: '100ms',
         150: '150ms',
       },
       keyframes: {

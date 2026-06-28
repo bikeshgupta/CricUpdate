@@ -139,7 +139,7 @@ export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: 
 }
 
 export function Stepper({ value, onChange, min = 0, max = 99 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) {
-  const btn = 'flex h-8 w-8 items-center justify-center rounded-md border border-line-strong text-fg-muted active:opacity-80 disabled:opacity-30';
+  const btn = 'flex h-8 w-8 items-center justify-center rounded-md border border-line-strong text-fg-muted transition duration-100 active:scale-[0.92] disabled:opacity-30';
   return (
     <div className="flex items-center gap-2.5">
       <button className={btn} disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>−</button>

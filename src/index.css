@@ -31,11 +31,11 @@
   /* ---- buttons (48px, 10px radius) ---- */
   .btn {
     @apply inline-flex h-12 select-none items-center justify-center gap-2 rounded-[10px]
-           px-4 text-body font-medium transition duration-150 active:opacity-80
+           px-4 text-body font-medium transition duration-100 active:scale-[0.94]
            disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-primary {
-    @apply bg-accent text-white hover:bg-accent-hover;
+    @apply bg-accent text-[#1E1E20] hover:bg-accent-hover active:bg-accent-pressed;
   }
   .btn-secondary {
     @apply border border-line-strong bg-surface text-fg hover:bg-surface2;
@@ -50,7 +50,7 @@
     @apply h-9 px-3 text-caption;
   }
 
-  /* ---- inputs (44px, 8px radius) ---- */
+  /* ---- inputs (44px, 10px radius) ---- */
   .input {
     @apply h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-body
            text-fg outline-none transition duration-150 placeholder:text-fg-faint
@@ -68,13 +68,13 @@
   }
   .seg-item {
     @apply flex-1 rounded-md px-3 py-2 text-center text-body font-medium text-fg-muted
-           transition duration-150 active:opacity-80;
+           transition duration-100 active:scale-[0.96];
   }
   .seg-item-active {
     @apply bg-surface2 text-fg;
   }
   .seg-item-active-accent {
-    @apply bg-accent text-white;
+    @apply bg-accent text-[#1E1E20];
   }
 
   /* ---- dense list row (16px h-pad, 12px v-pad) ---- */

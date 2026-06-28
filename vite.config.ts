@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'MatchOn',
         short_name: 'MatchOn',
         description: 'MatchOn by SymPal games — ball-by-ball cricket scoring with live shareable links',
-        theme_color: '#161616',
-        background_color: '#161616',
+        theme_color: '#1E1E20',
+        background_color: '#1E1E20',
         display: 'standalone',
         start_url: '/',
         icons: [

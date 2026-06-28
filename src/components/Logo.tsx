@@ -3,7 +3,7 @@
 export function BallO({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className="inline-block align-middle">
-      <circle cx="16" cy="16" r="15" fill="#16A085" />
+      <circle cx="16" cy="16" r="15" fill="#C8A95A" />
       <path d="M16 1.5 Q 10.5 16 16 30.5" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.9" />
       <g stroke="#fff" strokeWidth="1.3" strokeOpacity="0.85" strokeLinecap="round">
         <line x1="12.6" y1="6.6" x2="16.4" y2="5.9" />

@@ -20,15 +20,15 @@ const WICKET_TYPES: { type: WicketType; label: string }[] = [
 
 type SheetId = 'wide' | 'noball' | 'bye' | 'legbye' | 'wicket' | 'edit';
 
-// Tactile filled "tile" — solid raised surface, hairline edge, press feedback.
+// Compact square control — solid raised surface, hairline edge, tactile press feedback.
 const tile =
-  'flex items-center justify-center rounded-xl border border-white/[0.06] bg-surface2 font-semibold text-fg transition duration-150 active:scale-[0.96] active:brightness-110';
+  'flex items-center justify-center rounded-[10px] border border-line-strong bg-surface2 font-semibold text-fg transition duration-100 active:scale-[0.94]';
 
 function NumGrid({ values, onPick, cols = 'grid-cols-3' }: { values: number[]; onPick: (n: number) => void; cols?: string }) {
   return (
-    <div className={`grid ${cols} gap-2.5`}>
+    <div className={`grid ${cols} gap-2`}>
       {values.map((n) => (
-        <button key={n} onClick={() => onPick(n)} className={`${tile} h-14 text-xl`}>
+        <button key={n} onClick={() => onPick(n)} className={`${tile} h-12 text-body`}>
           {n}
         </button>
       ))}
@@ -56,16 +56,16 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
   const lastBall = active?.innings.balls.at(-1);
 
   return (
-    <div className="space-y-2.5 px-4 pb-6 pt-3">
-      {/* runs — large tactile tiles, boundaries tinted orange */}
-      <div className="grid grid-cols-3 gap-2.5">
+    <div className="space-y-2 px-4 pb-6 pt-3">
+      {/* runs — compact square buttons, boundaries tinted gold */}
+      <div className="flex justify-between gap-2">
         {RUN_VALUES.map((n) => {
           const boundary = n === 4 || n === 6;
           return (
             <button
               key={n}
               onClick={() => onRun(n)}
-              className={`${tile} h-[60px] text-[26px] font-bold ${boundary ? '!border-boundary/35 !bg-boundary/15 !text-boundary' : ''}`}
+              className={`${tile} h-14 w-14 text-xl ${boundary ? '!border-boundary/40 !bg-boundary/15 !text-boundary' : ''}`}
             >
               {n}
             </button>
@@ -73,29 +73,33 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
         })}
       </div>
 
-      {/* extras */}
-      <div className="grid grid-cols-4 gap-2.5">
+      {/* extras — compact chips, lighter visual weight */}
+      <div className="grid grid-cols-4 gap-2">
         {(['wide', 'noball', 'bye', 'legbye'] as const).map((e) => (
-          <button key={e} onClick={() => setSheet(e)} className={`${tile} h-12 text-body font-medium !text-fg-muted`}>
+          <button
+            key={e}
+            onClick={() => setSheet(e)}
+            className="h-9 rounded-md border border-line-strong bg-surface text-caption font-medium text-fg-muted transition duration-100 active:scale-[0.95]"
+          >
             {{ wide: 'Wd', noball: 'Nb', bye: 'Bye', legbye: 'Lb' }[e]}
           </button>
         ))}
       </div>
 
-      {/* wicket */}
+      {/* wicket — distinct but not oversized */}
       <button
         onClick={() => setSheet('wicket')}
-        className="flex h-12 w-full items-center justify-center rounded-xl border border-error/40 bg-error/15 text-base font-semibold text-error transition duration-150 active:scale-[0.98] active:brightness-110"
+        className="flex h-11 w-full items-center justify-center rounded-[10px] border border-error/40 bg-error/10 text-body font-semibold text-error transition duration-100 active:scale-[0.97]"
       >
         Wicket
       </button>
 
-      {/* undo / edit */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <button onClick={undoLastBall} className={`${tile} h-12 text-body font-medium`}>
+      {/* undo / edit — secondary, de-emphasized */}
+      <div className="flex justify-end gap-4 pt-1">
+        <button onClick={undoLastBall} className="text-caption font-medium text-fg-muted transition duration-100 active:opacity-60">
           Undo
         </button>
-        <button onClick={() => setSheet('edit')} className={`${tile} h-12 text-body font-medium`}>
+        <button onClick={() => setSheet('edit')} className="text-caption font-medium text-fg-muted transition duration-100 active:opacity-60">
           Edit last
         </button>
       </div>
@@ -110,7 +114,7 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
                 recordBall({ batterRuns: shotForRuns!, shot: s.id });
                 setShotForRuns(null);
               }}
-              className="rounded-xl border border-white/[0.06] bg-surface2 px-2 py-2.5 text-body text-fg transition duration-150 active:scale-[0.96] active:brightness-110"
+              className="rounded-[10px] border border-line-strong bg-surface2 px-2 py-2.5 text-body text-fg transition duration-100 active:scale-[0.95]"
             >
               {s.label}
             </button>
@@ -217,8 +221,8 @@ function WicketSheet({
             <button
               key={w.type}
               onClick={() => setType(w.type)}
-              className={`rounded-xl border px-2 py-2.5 text-body transition duration-150 active:scale-[0.97] ${
-                type === w.type ? 'border-error/50 bg-error/15 text-error' : 'border-white/[0.06] bg-surface2 text-fg'
+              className={`rounded-[10px] border px-2 py-2.5 text-body transition duration-100 active:scale-[0.95] ${
+                type === w.type ? 'border-error/50 bg-error/15 text-error' : 'border-line-strong bg-surface2 text-fg'
               }`}
             >
               {w.label}
@@ -234,7 +238,7 @@ function WicketSheet({
                 <button
                   key={id}
                   onClick={() => setDismissed(id!)}
-                  className={`rounded-xl border px-3 py-2.5 text-body transition active:scale-[0.97] ${dismissedId === id ? 'border-accent bg-accent/15 text-fg' : 'border-white/[0.06] bg-surface2 text-fg'}`}
+                  className={`rounded-[10px] border px-3 py-2.5 text-body transition duration-100 active:scale-[0.95] ${dismissedId === id ? 'border-accent bg-accent/15 text-fg' : 'border-line-strong bg-surface2 text-fg'}`}
                 >
                   {playerName(match, id)}
                 </button>

@@ -14,7 +14,7 @@ export default function Scoreboard({ match, state }: { match: Match; state: Inni
         <div className="min-w-0">
           <div className="truncate text-caption font-medium uppercase tracking-wide text-fg-muted">{battingTeam.name}</div>
           <div className="nums mt-0.5 leading-none text-fg">
-            <span className="text-[30px] font-bold">{state.totalRuns}</span>
+            <span className="text-score">{state.totalRuns}</span>
             <span className="text-[18px] font-semibold text-fg-muted">/{state.wickets}</span>
           </div>
         </div>
