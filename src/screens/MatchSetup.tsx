@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { useMatch } from '../store/matchStore';
-import { dataService } from '../services/dataService';
+import { useSavedPlayers, useSavedTeams } from '../hooks/useSavedRoster';
 import { DEFAULT_SETTINGS, type Match, type MatchSettings, type Player, type Team } from '../scoring/types';
 import {
+  AutocompleteInput,
   BackButton,
   Button,
   ControlRow,
@@ -21,26 +22,11 @@ import {
 
 type DraftTeam = Team; // { id, name, players: Player[] }
 
+const PRESET_OVERS = [2, 5, 6, 8, 10, 20];
+const CUSTOM_OVERS_SENTINEL = -1;
+
 function newTeam(name = ''): DraftTeam {
   return { id: crypto.randomUUID(), name, players: [] };
-}
-
-/** Distinct teams (by name) seen in the user's past matches, most-recent first. */
-function useSavedTeams(uid: string): Team[] {
-  const [teams, setTeams] = useState<Team[]>([]);
-  useEffect(() => {
-    dataService.listMyMatches(uid).then((matches) => {
-      const seen = new Map<string, Team>();
-      for (const m of matches) {
-        for (const t of [m.teamA, m.teamB]) {
-          const key = t.name.trim().toLowerCase();
-          if (t.name.trim() && !seen.has(key)) seen.set(key, t);
-        }
-      }
-      setTeams([...seen.values()]);
-    });
-  }, [uid]);
-  return teams;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +36,7 @@ export default function MatchSetup() {
   const createMatch = useMatch((s) => s.createMatch);
   const navigate = useNavigate();
   const savedTeams = useSavedTeams(user.uid);
+  const savedPlayers = useSavedPlayers(user.uid);
 
   const [step, setStep] = useState<'pick' | 'roster'>('pick');
   const [teamA, setTeamA] = useState<DraftTeam | null>(null);
@@ -149,15 +136,31 @@ export default function MatchSetup() {
           {activeTeam && (
             <RosterEditor
               team={activeTeam}
+              suggestions={savedPlayers}
               onRename={(name) => setActive((t) => ({ ...t, name }))}
               onAdd={(name) => setActive((t) => ({ ...t, players: [...t.players, { id: crypto.randomUUID(), name, category: 'gents' }] }))}
               onRemove={(pid) => setActive((t) => ({ ...t, players: t.players.filter((p) => p.id !== pid) }))}
+              onEditPlayer={(pid, name) => setActive((t) => ({ ...t, players: t.players.map((p) => (p.id === pid ? { ...p, name } : p)) }))}
             />
           )}
 
           <SectionHeader>Overs per innings</SectionHeader>
-          <div className="px-4 pb-2">
-            <Segmented options={[2, 5, 6, 8, 10, 20].map((o) => ({ value: o, label: o }))} value={overs} onChange={setOvers} />
+          <div className="space-y-2 px-4 pb-2">
+            <Segmented
+              options={[...PRESET_OVERS.map((o) => ({ value: o, label: o })), { value: CUSTOM_OVERS_SENTINEL, label: 'Custom' }]}
+              value={PRESET_OVERS.includes(overs) ? overs : CUSTOM_OVERS_SENTINEL}
+              onChange={(v) => {
+                if (v === CUSTOM_OVERS_SENTINEL) {
+                  if (PRESET_OVERS.includes(overs)) setOvers(7);
+                } else setOvers(v);
+              }}
+            />
+            {!PRESET_OVERS.includes(overs) && (
+              <div className="flex items-center justify-between rounded-[10px] border border-line-strong bg-surface px-3 py-2.5">
+                <span className="text-caption text-fg-muted">Custom overs</span>
+                <Stepper value={overs} onChange={setOvers} min={1} max={50} />
+              </div>
+            )}
           </div>
 
           <button onClick={() => setShowRules((v) => !v)} className="section-header w-full">
@@ -210,22 +213,39 @@ function TeamCard({ team, onTap }: { team: DraftTeam | null; onTap: () => void }
 
 function RosterEditor({
   team,
+  suggestions,
   onRename,
   onAdd,
   onRemove,
+  onEditPlayer,
 }: {
   team: DraftTeam;
+  suggestions: string[];
   onRename: (name: string) => void;
   onAdd: (name: string) => void;
   onRemove: (id: string) => void;
+  onEditPlayer: (id: string, name: string) => void;
 }) {
   const [draft, setDraft] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+
   const add = () => {
     const t = draft.trim();
     if (!t) return;
     onAdd(t);
     setDraft('');
   };
+  const startEdit = (id: string, name: string) => {
+    setEditingId(id);
+    setEditingName(name);
+  };
+  const saveEdit = () => {
+    const t = editingName.trim();
+    if (editingId && t) onEditPlayer(editingId, t);
+    setEditingId(null);
+  };
+
   return (
     <div>
       <div className="px-4 py-3">
@@ -233,19 +253,39 @@ function RosterEditor({
       </div>
       {team.players.length > 0 && (
         <div className="divide-line border-t border-line">
-          {team.players.map((p, i) => (
-            <div key={p.id} className="row justify-between">
-              <span className="flex items-center gap-3 text-body text-fg">
-                <span className="text-caption text-fg-faint">{i + 1}</span>
-                {p.name}
-              </span>
-              <button onClick={() => onRemove(p.id)} className="text-caption text-fg-faint hover:text-error">Remove</button>
-            </div>
-          ))}
+          {team.players.map((p, i) =>
+            editingId === p.id ? (
+              <div key={p.id} className="row gap-2 justify-between">
+                <span className="shrink-0 text-caption text-fg-faint">{i + 1}</span>
+                <TextInput
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                  autoFocus
+                  className="flex-1"
+                />
+                <button onClick={saveEdit} className="shrink-0 text-caption font-medium text-accent">Save</button>
+                <button onClick={() => setEditingId(null)} className="shrink-0 text-caption text-fg-faint">Cancel</button>
+              </div>
+            ) : (
+              <div key={p.id} className="row justify-between">
+                <span className="flex items-center gap-3 text-body text-fg">
+                  <span className="text-caption text-fg-faint">{i + 1}</span>
+                  {p.name}
+                </span>
+                <span className="flex shrink-0 items-center gap-3">
+                  <button onClick={() => startEdit(p.id, p.name)} className="text-caption text-fg-faint hover:text-fg">Edit</button>
+                  <button onClick={() => onRemove(p.id)} className="text-caption text-fg-faint hover:text-error">Remove</button>
+                </span>
+              </div>
+            ),
+          )}
         </div>
       )}
       <div className="flex items-center gap-2 border-y border-line px-4 py-2.5">
-        <TextInput value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} placeholder="Add player name" />
+        <div className="flex-1">
+          <AutocompleteInput value={draft} onChange={setDraft} suggestions={suggestions} onSubmit={add} placeholder="Add player name" />
+        </div>
         <Button variant="secondary" onClick={add} disabled={!draft.trim()} className="shrink-0 px-4">
           Add
         </Button>

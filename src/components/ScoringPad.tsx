@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useMatch } from '../store/matchStore';
 import { playerName, teamById } from '../scoring/match';
 import { ballToken } from '../scoring/engine';
-import { SHOT_TYPES } from '../scoring/commentary';
 import type { InningsState, Match, WicketType } from '../scoring/types';
 import { Button, Sheet } from './ui';
 import PlayerPicker from './PlayerPicker';
@@ -43,15 +42,10 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
   const active = useMatch((s) => s.activeInnings)();
 
   const [sheet, setSheet] = useState<SheetId | null>(null);
-  const [shotForRuns, setShotForRuns] = useState<number | null>(null);
   const close = () => setSheet(null);
 
-  const onRun = (n: number) => {
-    if (n === 4 || n === 6) setShotForRuns(n);
-    else recordBall({ batterRuns: n });
-  };
+  const onRun = (n: number) => recordBall({ batterRuns: n });
 
-  const strikerName = state.strikerId ? playerName(match, state.strikerId) : 'Batter';
   const bowlingTeam = teamById(match, state.bowlingTeamId);
   const lastBall = active?.innings.balls.at(-1);
 
@@ -105,34 +99,6 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
       </div>
 
       {/* ---- sheets ---- */}
-      <Sheet open={shotForRuns !== null} onClose={() => setShotForRuns(null)} title={`${strikerName} — ${shotForRuns === 6 ? 'six' : 'four'}: where did it go?`}>
-        <div className="grid grid-cols-3 gap-2">
-          {SHOT_TYPES.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => {
-                recordBall({ batterRuns: shotForRuns!, shot: s.id });
-                setShotForRuns(null);
-              }}
-              className="rounded-[10px] border border-line-strong bg-surface2 px-2 py-2.5 text-body text-fg transition duration-100 active:scale-[0.95]"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-        <Button
-          variant="ghost"
-          block
-          className="mt-2"
-          onClick={() => {
-            recordBall({ batterRuns: shotForRuns! });
-            setShotForRuns(null);
-          }}
-        >
-          Skip — just {shotForRuns}
-        </Button>
-      </Sheet>
-
       <Sheet open={sheet === 'wide'} onClose={close} title="Wide">
         <p className="mb-3 text-caption text-fg-muted">Runs run while the ball is wide</p>
         <NumGrid values={[0, 1, 2, 3, 4]} cols="grid-cols-5" onPick={(n) => { recordBall({ extra: 'wide', extraRuns: n }); close(); }} />

@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 
 // ---------------------------------------------------------------------------
@@ -92,6 +93,56 @@ export function Button({ variant = 'secondary', size = 'md', block, className = 
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`input ${props.className ?? ''}`} />;
+}
+
+/** Text input with a tap-to-fill dropdown of matching suggestions (e.g. previously-used player names). */
+export function AutocompleteInput({
+  value,
+  onChange,
+  suggestions,
+  placeholder,
+  onSubmit,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  suggestions: string[];
+  placeholder?: string;
+  onSubmit?: () => void;
+  autoFocus?: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+  const q = value.trim().toLowerCase();
+  const filtered = q ? suggestions.filter((s) => s.toLowerCase().includes(q) && s.toLowerCase() !== q).slice(0, 5) : [];
+  return (
+    <div className="relative">
+      <TextInput
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 120)}
+        onKeyDown={(e) => e.key === 'Enter' && onSubmit?.()}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+      />
+      {focused && filtered.length > 0 && (
+        <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-[10px] border border-line-strong bg-surface2 shadow-lg">
+          {filtered.map((s) => (
+            <button
+              key={s}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(s);
+              }}
+              className="block w-full px-3 py-2 text-left text-body text-fg transition duration-100 hover:bg-surface active:bg-surface"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function Segmented<T extends string | number>({

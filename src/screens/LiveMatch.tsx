@@ -14,6 +14,7 @@ import TossFlow from '../components/TossFlow';
 import PlayerPicker from '../components/PlayerPicker';
 import PlayerManager from '../components/PlayerManager';
 import ShareBar from '../components/ShareBar';
+import MatchSummary from '../components/MatchSummary';
 
 export default function LiveMatch() {
   const { id } = useParams<{ id: string }>();
@@ -128,6 +129,7 @@ function LiveTab({ match, isOwner }: { match: Match; isOwner: boolean }) {
       <div>
         <ResultBanner match={match} />
         <ShareBar matchId={match.id} />
+        <MatchSummary match={match} />
         <Commentary match={match} />
       </div>
     );

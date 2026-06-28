@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useMatch } from '../store/matchStore';
+import { useAuth } from '../store/authStore';
+import { useSavedPlayers } from '../hooks/useSavedRoster';
 import type { Match } from '../scoring/types';
-import { Button, Segmented, Sheet, TextInput } from './ui';
+import { AutocompleteInput, Button, Segmented, Sheet } from './ui';
 
 /** Add a late-arriving player to either team mid-match. */
 export default function PlayerManager({ open, onClose, match }: { open: boolean; onClose: () => void; match: Match }) {
   const addPlayer = useMatch((s) => s.addPlayer);
+  const user = useAuth((s) => s.user);
+  const savedPlayers = useSavedPlayers(user?.uid ?? '');
   const [teamId, setTeamId] = useState(match.teamA.id);
   const [name, setName] = useState('');
 
@@ -26,7 +30,7 @@ export default function PlayerManager({ open, onClose, match }: { open: boolean;
           value={teamId}
           onChange={setTeamId}
         />
-        <TextInput value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} placeholder="Player name" autoFocus />
+        <AutocompleteInput value={name} onChange={setName} suggestions={savedPlayers} onSubmit={submit} placeholder="Player name" autoFocus />
         <Button variant="primary" block onClick={submit} disabled={!name.trim()}>
           Add player
         </Button>
