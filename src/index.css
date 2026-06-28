@@ -50,11 +50,11 @@
     @apply h-9 px-3 text-caption;
   }
 
-  /* ---- inputs (44px, 10px radius) ---- */
+  /* ---- inputs (44px, 10px radius, clearly bordered with a gold underline) ---- */
   .input {
-    @apply h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-body
-           text-fg outline-none transition duration-150 placeholder:text-fg-faint
-           focus:border-accent;
+    @apply h-11 w-full rounded-lg border-[1.5px] border-line-strong border-b-2 border-b-accent/50 bg-surface2 px-3
+           text-body text-fg outline-none transition duration-150 placeholder:text-fg-faint
+           focus:border-accent focus:border-b-accent;
   }
 
   /* ---- section header (16px medium, muted) ---- */

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { Button, Screen } from '../components/ui';
 import { BrandLockup } from '../components/Logo';
@@ -17,6 +18,7 @@ function GoogleGlyph() {
 
 export default function Login() {
   const signIn = useAuth((s) => s.signIn);
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -56,6 +58,9 @@ export default function Login() {
           <p className="text-center text-caption text-fg-faint">
             Sign in to create matches. Anyone with a share link can watch live — no account needed.
           </p>
+          <button onClick={() => navigate('/players')} className="block w-full text-center text-caption text-fg-muted hover:text-fg">
+            Browse player stats
+          </button>
         </div>
       </div>
     </Screen>

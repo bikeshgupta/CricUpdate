@@ -12,6 +12,8 @@ import Commentary from '../components/Commentary';
 import Squads from '../components/Squads';
 import TossFlow from '../components/TossFlow';
 import PlayerPicker from '../components/PlayerPicker';
+import PlayerSlot from '../components/PlayerSlot';
+import { BallIcon, BatIcon } from '../components/icons';
 import PlayerManager from '../components/PlayerManager';
 import ShareBar from '../components/ShareBar';
 import MatchSummary from '../components/MatchSummary';
@@ -250,12 +252,32 @@ function InningsBreak({ match, firstInnings }: { match: Match; firstInnings: Inn
           <span className="nums font-semibold text-accent">{target}</span>
         </div>
       </div>
-      <SectionHeader>Striker · {battingNext.name}</SectionHeader>
-      <div className="px-4"><PlayerPicker players={battingNext.players} selectedId={strikerId} excludeIds={nonStrikerId ? [nonStrikerId] : []} onSelect={setStrikerId} /></div>
-      <SectionHeader>Non-striker</SectionHeader>
-      <div className="px-4"><PlayerPicker players={battingNext.players} selectedId={nonStrikerId} excludeIds={strikerId ? [strikerId] : []} onSelect={setNonStrikerId} /></div>
-      <SectionHeader>Opening bowler · {bowlingNext.name}</SectionHeader>
-      <div className="px-4"><PlayerPicker players={bowlingNext.players} selectedId={bowlerId} onSelect={setBowlerId} /></div>
+      <SectionHeader>Opening line-up</SectionHeader>
+      <div className="divide-line border-y border-line">
+        <PlayerSlot
+          label={`Striker · ${battingNext.name}`}
+          icon={<BatIcon size={18} />}
+          players={battingNext.players}
+          selectedId={strikerId}
+          excludeIds={nonStrikerId ? [nonStrikerId] : []}
+          onSelect={setStrikerId}
+        />
+        <PlayerSlot
+          label="Non-striker"
+          icon={<BatIcon size={18} />}
+          players={battingNext.players}
+          selectedId={nonStrikerId}
+          excludeIds={strikerId ? [strikerId] : []}
+          onSelect={setNonStrikerId}
+        />
+        <PlayerSlot
+          label={`Opening bowler · ${bowlingNext.name}`}
+          icon={<BallIcon size={18} />}
+          players={bowlingNext.players}
+          selectedId={bowlerId}
+          onSelect={setBowlerId}
+        />
+      </div>
       <div className="sticky bottom-0 mt-4 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         <Button variant="primary" block disabled={!ready} onClick={() => startInnings2(strikerId!, nonStrikerId!, bowlerId!)}>
           Start 2nd innings

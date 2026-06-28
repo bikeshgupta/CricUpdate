@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -23,7 +24,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import type { Match } from '../scoring/types';
-import type { AppUser, DataService } from './dataService';
+import type { AppUser, DataService, PlayerProfile } from './dataService';
 
 function mapUser(u: User | null): AppUser | null {
   if (!u) return null;
@@ -37,6 +38,8 @@ function mapUser(u: User | null): AppUser | null {
 }
 
 const matchDoc = (id: string) => doc(db!, 'matches', id);
+const profileDoc = (nameKey: string) => doc(db!, 'playerProfiles', nameKey);
+const handleDoc = (handle: string) => doc(db!, 'handles', handle);
 
 export const firebaseDataService: DataService = {
   async signInWithGoogle() {
@@ -70,6 +73,10 @@ export const firebaseDataService: DataService = {
     await setDoc(matchDoc(match.id), match as DocumentData);
   },
 
+  async deleteMatch(id) {
+    await deleteDoc(matchDoc(id));
+  },
+
   subscribeMatch(id, cb) {
     return onSnapshot(
       matchDoc(id),
@@ -84,5 +91,28 @@ export const firebaseDataService: DataService = {
     const matches: Match[] = [];
     snap.forEach((d) => matches.push(d.data() as Match));
     return matches.sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  async listAllMatches() {
+    const snap = await getDocs(collection(db!, 'matches'));
+    const matches: Match[] = [];
+    snap.forEach((d) => matches.push(d.data() as Match));
+    return matches.sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  async getPlayerProfile(nameKey) {
+    const snap = await getDoc(profileDoc(nameKey));
+    return snap.exists() ? (snap.data() as PlayerProfile) : null;
+  },
+
+  async isHandleAvailable(handle) {
+    const snap = await getDoc(handleDoc(handle));
+    return !snap.exists();
+  },
+
+  async claimPlayerProfile(nameKey, displayName, handle, uid) {
+    const profile: PlayerProfile = { nameKey, name: displayName, handle, claimedByUid: uid, claimedAt: Date.now() };
+    await setDoc(handleDoc(handle), { uid, claimedAt: profile.claimedAt });
+    await setDoc(profileDoc(nameKey), profile as DocumentData);
   },
 };

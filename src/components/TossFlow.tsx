@@ -5,9 +5,10 @@ import { teamById } from '../scoring/match';
 import type { Match } from '../scoring/types';
 import { Button, SectionHeader, Segmented } from './ui';
 import CoinToss from './CoinToss';
-import PlayerPicker from './PlayerPicker';
+import PlayerSlot from './PlayerSlot';
+import { BallIcon, BatIcon } from './icons';
 
-type Step = 'start' | 'call' | 'flip' | 'decision' | 'manual' | 'openers';
+type Step = 'start' | 'call' | 'flip' | 'decision' | 'confirm' | 'manual' | 'openers';
 
 export default function TossFlow({ match }: { match: Match }) {
   const setToss = useMatch((s) => s.setToss);
@@ -47,7 +48,18 @@ export default function TossFlow({ match }: { match: Match }) {
   const confirmDecision = (d: 'bat' | 'bowl') => {
     if (!winnerId) return;
     setDecision(d);
-    setToss({ callingTeamId, call, outcome, winnerTeamId: winnerId, decision: d });
+    setStep('confirm');
+  };
+
+  const reToss = () => {
+    setWinnerId(null);
+    setDecision(null);
+    setStep('call');
+  };
+
+  const startMatch = () => {
+    if (!winnerId || !decision) return;
+    setToss({ callingTeamId, call, outcome, winnerTeamId: winnerId, decision });
     setStep('openers');
   };
 
@@ -161,22 +173,55 @@ export default function TossFlow({ match }: { match: Match }) {
         </div>
       )}
 
+      {step === 'confirm' && winner && decision && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }} className="space-y-5 px-4 py-8 text-center">
+          <div>
+            <div className="text-body font-semibold text-accent">It&apos;s {outcome}</div>
+            <div className="mt-1 text-caption text-fg-muted">
+              <span className="text-fg">{winner.name}</span> won the toss and chose to <span className="text-fg">{decision}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="secondary" onClick={reToss}>
+              Re-toss
+            </Button>
+            <Button variant="primary" onClick={startMatch}>
+              Start match
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       {step === 'openers' && battingFirst && bowlingFirst && (
         <div className="animate-fade-in">
           <div className="border-b border-line px-4 py-2.5 text-caption text-fg-muted">
             <span className="text-fg">{battingFirst.name}</span> bat first
           </div>
-          <SectionHeader>Striker</SectionHeader>
-          <div className="px-4">
-            <PlayerPicker players={battingFirst.players} selectedId={strikerId} excludeIds={nonStrikerId ? [nonStrikerId] : []} onSelect={setStrikerId} />
-          </div>
-          <SectionHeader>Non-striker</SectionHeader>
-          <div className="px-4">
-            <PlayerPicker players={battingFirst.players} selectedId={nonStrikerId} excludeIds={strikerId ? [strikerId] : []} onSelect={setNonStrikerId} />
-          </div>
-          <SectionHeader>Opening bowler · {bowlingFirst.name}</SectionHeader>
-          <div className="px-4">
-            <PlayerPicker players={bowlingFirst.players} selectedId={bowlerId} onSelect={setBowlerId} />
+          <SectionHeader>Opening line-up</SectionHeader>
+          <div className="divide-line border-y border-line">
+            <PlayerSlot
+              label="Striker"
+              icon={<BatIcon size={18} />}
+              players={battingFirst.players}
+              selectedId={strikerId}
+              excludeIds={nonStrikerId ? [nonStrikerId] : []}
+              onSelect={setStrikerId}
+            />
+            <PlayerSlot
+              label="Non-striker"
+              icon={<BatIcon size={18} />}
+              players={battingFirst.players}
+              selectedId={nonStrikerId}
+              excludeIds={strikerId ? [strikerId] : []}
+              onSelect={setNonStrikerId}
+            />
+            <PlayerSlot
+              label={`Opening bowler · ${bowlingFirst.name}`}
+              icon={<BallIcon size={18} />}
+              players={bowlingFirst.players}
+              selectedId={bowlerId}
+              onSelect={setBowlerId}
+            />
           </div>
           <div className="sticky bottom-0 mt-4 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <Button variant="primary" block disabled={!openersReady} onClick={() => startInnings1(strikerId!, nonStrikerId!, bowlerId!)}>

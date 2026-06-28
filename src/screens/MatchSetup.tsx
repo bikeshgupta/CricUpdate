@@ -19,6 +19,7 @@ import {
   TeamBadge,
   TextInput,
 } from '../components/ui';
+import { CheckIcon, CloseIcon, EditIcon, TrashIcon } from '../components/icons';
 
 type DraftTeam = Team; // { id, name, players: Player[] }
 
@@ -264,8 +265,12 @@ function RosterEditor({
                   autoFocus
                   className="flex-1"
                 />
-                <button onClick={saveEdit} className="shrink-0 text-caption font-medium text-accent">Save</button>
-                <button onClick={() => setEditingId(null)} className="shrink-0 text-caption text-fg-faint">Cancel</button>
+                <button onClick={saveEdit} aria-label="Save" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-accent hover:bg-surface2">
+                  <CheckIcon size={16} />
+                </button>
+                <button onClick={() => setEditingId(null)} aria-label="Cancel" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-fg">
+                  <CloseIcon size={16} />
+                </button>
               </div>
             ) : (
               <div key={p.id} className="row justify-between">
@@ -273,9 +278,13 @@ function RosterEditor({
                   <span className="text-caption text-fg-faint">{i + 1}</span>
                   {p.name}
                 </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <button onClick={() => startEdit(p.id, p.name)} className="text-caption text-fg-faint hover:text-fg">Edit</button>
-                  <button onClick={() => onRemove(p.id)} className="text-caption text-fg-faint hover:text-error">Remove</button>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <button onClick={() => startEdit(p.id, p.name)} aria-label="Edit player" className="flex h-8 w-8 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-fg">
+                    <EditIcon size={16} />
+                  </button>
+                  <button onClick={() => onRemove(p.id)} aria-label="Remove player" className="flex h-8 w-8 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-error">
+                    <TrashIcon size={16} />
+                  </button>
                 </span>
               </div>
             ),

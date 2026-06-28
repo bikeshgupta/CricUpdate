@@ -8,6 +8,8 @@ import Login from './screens/Login';
 import Home from './screens/Home';
 import MatchSetup from './screens/MatchSetup';
 import LiveMatch from './screens/LiveMatch';
+import Players from './screens/Players';
+import PlayerProfile from './screens/PlayerProfile';
 
 export default function App() {
   // Firebase must be configured for the app to run.
@@ -30,8 +32,10 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Watching a live match never requires sign-in. */}
+      {/* Watching a live match, and browsing player stats, never require sign-in. */}
       <Route path="/match/:id" element={<LiveMatch />} />
+      <Route path="/players" element={<Players />} />
+      <Route path="/player/:nameKey" element={<PlayerProfile />} />
       <Route path="/" element={user ? <Home /> : <Login />} />
       <Route path="/new" element={user ? <MatchSetup /> : <Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />

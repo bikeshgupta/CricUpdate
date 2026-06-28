@@ -25,9 +25,25 @@ export interface DataService {
   createMatch(match: Match): Promise<void>;
   getMatch(id: string): Promise<Match | null>;
   updateMatch(match: Match): Promise<void>;
+  deleteMatch(id: string): Promise<void>;
   /** Live subscription. Returns an unsubscribe fn. */
   subscribeMatch(id: string, cb: (match: Match | null) => void): () => void;
   listMyMatches(uid: string): Promise<Match[]>;
+  /** Every match in the app — backs the public player-stats directory. */
+  listAllMatches(): Promise<Match[]>;
+
+  // --- player profiles (claimable stat cards) ---
+  getPlayerProfile(nameKey: string): Promise<PlayerProfile | null>;
+  isHandleAvailable(handle: string): Promise<boolean>;
+  claimPlayerProfile(nameKey: string, displayName: string, handle: string, uid: string): Promise<void>;
+}
+
+export interface PlayerProfile {
+  nameKey: string;
+  name: string;
+  handle: string;
+  claimedByUid: string;
+  claimedAt: number;
 }
 
 import { firebaseEnabled } from '../firebase/config';

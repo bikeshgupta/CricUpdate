@@ -18,5 +18,24 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // Claimable player stat cards, keyed by normalized player name. A profile
+    // only exists once claimed, so create succeeding means "first to claim".
+    match /playerProfiles/{nameKey} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.claimedByUid == request.auth.uid;
+      allow update: if request.auth != null
+                    && resource.data.claimedByUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Reserves a unique handle for a claimed player profile.
+    match /handles/{handle} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }

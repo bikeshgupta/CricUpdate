@@ -1,12 +1,5 @@
 import type { Player } from '../scoring/types';
-
-function Check() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
-}
+import { CheckIcon } from './icons';
 
 export default function PlayerPicker({
   players,
@@ -45,7 +38,7 @@ export default function PlayerPicker({
               {p.name}
               {isOut && <span className="text-caption text-fg-faint">out</span>}
             </span>
-            {selected && <Check />}
+            {selected && <CheckIcon className="text-accent" />}
           </button>
         );
       })}
