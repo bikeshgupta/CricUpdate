@@ -44,6 +44,7 @@ export default function MatchSetup() {
   const [teamB, setTeamB] = useState<DraftTeam | null>(null);
   const [tab, setTab] = useState<'A' | 'B'>('A');
   const [overs, setOvers] = useState(6);
+  const [customOvers, setCustomOvers] = useState(false);
   const [settings, setSettings] = useState<MatchSettings>(DEFAULT_SETTINGS);
   const [showRules, setShowRules] = useState(false);
 
@@ -149,17 +150,30 @@ export default function MatchSetup() {
           <div className="space-y-2 px-4 pb-2">
             <Segmented
               options={[...PRESET_OVERS.map((o) => ({ value: o, label: o })), { value: CUSTOM_OVERS_SENTINEL, label: 'Custom' }]}
-              value={PRESET_OVERS.includes(overs) ? overs : CUSTOM_OVERS_SENTINEL}
+              value={customOvers ? CUSTOM_OVERS_SENTINEL : overs}
               onChange={(v) => {
-                if (v === CUSTOM_OVERS_SENTINEL) {
-                  if (PRESET_OVERS.includes(overs)) setOvers(7);
-                } else setOvers(v);
+                if (v === CUSTOM_OVERS_SENTINEL) setCustomOvers(true);
+                else {
+                  setCustomOvers(false);
+                  setOvers(v);
+                }
               }}
             />
-            {!PRESET_OVERS.includes(overs) && (
+            {customOvers && (
               <div className="flex items-center justify-between rounded-[10px] border border-line-strong bg-surface px-3 py-2.5">
                 <span className="text-caption text-fg-muted">Custom overs</span>
-                <Stepper value={overs} onChange={setOvers} min={1} max={50} />
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={50}
+                  value={overs}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(n)) setOvers(Math.min(50, Math.max(1, n)));
+                  }}
+                  className="nums w-16 rounded-md border border-line-strong bg-surface2 px-2 py-1.5 text-center text-body text-fg outline-none focus:border-accent"
+                />
               </div>
             )}
           </div>

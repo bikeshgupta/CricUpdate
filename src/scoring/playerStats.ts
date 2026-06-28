@@ -10,6 +10,7 @@ import type { Match } from './types';
 export interface PlayerStatTotals {
   nameKey: string;
   displayName: string;
+  teams: Set<string>;
   matches: number;
   innings: number;
   runs: number;
@@ -30,6 +31,7 @@ function freshTotals(nameKey: string, displayName: string): PlayerStatTotals {
   return {
     nameKey,
     displayName,
+    teams: new Set(),
     matches: 0,
     innings: 0,
     runs: 0,
@@ -57,6 +59,9 @@ export function computeAllPlayerStats(matches: Match[]): Map<string, PlayerStatT
   for (const match of matches) {
     const playerName = new Map<string, string>();
     for (const p of [...match.teamA.players, ...match.teamB.players]) playerName.set(p.id, p.name);
+
+    for (const p of match.teamA.players) ensure(p.name).teams.add(match.teamA.name);
+    for (const p of match.teamB.players) ensure(p.name).teams.add(match.teamB.name);
 
     const playedInThisMatch = new Set<string>();
     for (const which of [1, 2] as const) {

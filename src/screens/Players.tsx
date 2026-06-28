@@ -48,7 +48,9 @@ export default function Players() {
                 <TeamBadge name={s.displayName} size="sm" />
                 <span className="min-w-0">
                   <span className="block truncate text-body text-fg">{s.displayName}</span>
-                  <span className="block text-caption text-fg-muted">{s.matches} matches</span>
+                  <span className="block truncate text-caption text-fg-muted">
+                    {s.matches} matches{s.teams.size > 0 ? ` · ${[...s.teams].join(', ')}` : ''}
+                  </span>
                 </span>
               </span>
               <span className="nums shrink-0 text-right">

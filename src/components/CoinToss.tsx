@@ -1,5 +1,5 @@
 import { motion, useAnimationControls } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 /**
  * 3D coin flip with a toss-like arc (spin + rise/fall + slight wobble) and a
@@ -17,13 +17,8 @@ export default function CoinToss({
 }) {
   const controls = useAnimationControls();
   const shadowControls = useAnimationControls();
-  const first = useRef(true);
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
     const spins = 5;
     const final = outcome === 'heads' ? 0 : 180;
     const duration = 1.3;

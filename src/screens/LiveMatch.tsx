@@ -13,7 +13,7 @@ import Squads from '../components/Squads';
 import TossFlow from '../components/TossFlow';
 import PlayerPicker from '../components/PlayerPicker';
 import PlayerSlot from '../components/PlayerSlot';
-import { BallIcon, BatIcon } from '../components/icons';
+import { BallIcon, BatIcon, LiveDotIcon } from '../components/icons';
 import PlayerManager from '../components/PlayerManager';
 import ShareBar from '../components/ShareBar';
 import MatchSummary from '../components/MatchSummary';
@@ -62,7 +62,7 @@ export default function LiveMatch() {
 }
 
 // ---------------------------------------------------------------------------
-type TabId = 'live' | 'scorecard' | 'squads';
+type TabId = 'live' | 'scorecard' | 'squads' | 'info';
 
 function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean; onBack: () => void }) {
   const [tab, setTab] = useState<TabId>('live');
@@ -76,7 +76,7 @@ function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean;
         left={<BackButton onClick={onBack} />}
         right={
           <>
-            {!isComplete && <span className="mr-1 flex items-center gap-1.5 text-caption font-medium text-accent"><span className="h-1.5 w-1.5 rounded-full bg-accent" />Live</span>}
+            {!isComplete && <span className="mr-1 flex items-center gap-1.5 text-caption font-medium text-fg"><LiveDotIcon />Live</span>}
             <ShareBar matchId={match.id} compact />
           </>
         }
@@ -88,6 +88,7 @@ function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean;
             { id: 'live', label: 'Live' },
             { id: 'scorecard', label: 'Scorecard' },
             { id: 'squads', label: 'Squads' },
+            { id: 'info', label: 'Info' },
           ]}
           active={tab}
           onChange={setTab}
@@ -98,6 +99,7 @@ function MatchView({ match, isOwner, onBack }: { match: Match; isOwner: boolean;
         {tab === 'live' && <LiveTab match={match} isOwner={isOwner} />}
         {tab === 'scorecard' && <ScorecardTab match={match} />}
         {tab === 'squads' && <Squads match={match} />}
+        {tab === 'info' && <InfoTab match={match} />}
       </div>
     </Screen>
   );
@@ -295,6 +297,47 @@ function ScorecardTab({ match }: { match: Match }) {
     <div className="divide-y divide-line">
       {s2 && <InningsTable match={match} state={s2} defaultOpen />}
       {s1 && <InningsTable match={match} state={s1} defaultOpen={!s2} />}
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5 text-body">
+      <span className="text-fg-muted">{label}</span>
+      <span className="nums text-fg">{value}</span>
+    </div>
+  );
+}
+
+function InfoTab({ match }: { match: Match }) {
+  const toss = match.toss;
+  return (
+    <div className="px-4 py-4">
+      <SectionHeader>Toss</SectionHeader>
+      {toss ? (
+        <div className="rounded-lg border border-line-strong bg-surface px-3.5 py-3">
+          <div className="text-body text-fg">
+            <span className="font-semibold text-accent">{teamById(match, toss.winnerTeamId).name}</span> won the toss and opted to{' '}
+            <span className="font-semibold">{toss.decision}</span>
+          </div>
+          <div className="mt-1 text-caption text-fg-muted">
+            {teamById(match, toss.callingTeamId).name} called {toss.call} — it landed {toss.outcome}
+          </div>
+        </div>
+      ) : (
+        <div className="px-1 text-caption text-fg-faint">No toss recorded for this match.</div>
+      )}
+
+      <div className="mt-5">
+        <SectionHeader>Match settings</SectionHeader>
+        <div className="divide-line rounded-lg border border-line-strong bg-surface">
+          <InfoRow label="Overs per innings" value={match.settings.oversPerInnings} />
+          <InfoRow label="Wide penalty" value={`${match.settings.wideRuns} run${match.settings.wideRuns === 1 ? '' : 's'}`} />
+          <InfoRow label="No-ball penalty" value={`${match.settings.noBallRuns} run${match.settings.noBallRuns === 1 ? '' : 's'}`} />
+          <InfoRow label="Free hit after no-ball" value={match.settings.freeHitAfterNoBall ? 'Yes' : 'No'} />
+        </div>
+      </div>
     </div>
   );
 }

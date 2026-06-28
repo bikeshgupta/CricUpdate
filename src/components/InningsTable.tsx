@@ -36,7 +36,7 @@ export default function InningsTable({ match, state, defaultOpen = true }: { mat
         <span className="flex items-center gap-2">
           <span className="nums text-body font-semibold text-fg">
             {state.totalRuns}-{state.wickets}
-            <span className="ml-1.5 text-caption font-normal text-fg-muted">({state.oversText} Ov)</span>
+            <span className="ml-1.5 text-caption font-normal text-fg-muted">({state.oversText}/{match.settings.oversPerInnings} Ov)</span>
           </span>
           <span className={`text-fg-muted transition-transform duration-150 ${open ? 'rotate-180' : ''}`}>⌄</span>
         </span>
@@ -88,7 +88,7 @@ export default function InningsTable({ match, state, defaultOpen = true }: { mat
           <div className="flex items-center justify-between border-t border-line px-4 py-2 text-body">
             <span className="font-semibold text-fg">Total</span>
             <span className="nums font-semibold text-fg">
-              {state.totalRuns}-{state.wickets} <span className="text-caption font-normal text-fg-muted">({state.oversText} Ov)</span>
+              {state.totalRuns}-{state.wickets} <span className="text-caption font-normal text-fg-muted">({state.oversText}/{match.settings.oversPerInnings} Ov)</span>
             </span>
           </div>
 

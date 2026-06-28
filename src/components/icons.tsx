@@ -121,8 +121,11 @@ export function JoinIcon(props: IconProps) {
 export function LiveDotIcon({ size = 8, ...rest }: IconProps) {
   return (
     <span className="relative inline-flex" style={{ width: size, height: size }} {...(rest as React.HTMLAttributes<HTMLSpanElement>)}>
-      <span className="absolute inset-0 animate-ping rounded-full bg-accent opacity-60" />
-      <span className="relative inline-flex h-full w-full rounded-full bg-accent" />
+      <span className="absolute inset-0 animate-ping rounded-full bg-[#3DDC72] opacity-75" />
+      <span
+        className="relative inline-flex h-full w-full rounded-full bg-[#3DDC72]"
+        style={{ boxShadow: '0 0 6px 1px rgba(61,220,114,0.8)' }}
+      />
     </span>
   );
 }

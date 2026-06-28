@@ -113,6 +113,9 @@ export default function PlayerProfile() {
           <div className="flex flex-col items-center gap-2 px-4 py-6">
             <TeamBadge name={displayName} size="lg" />
             <div className="text-section font-semibold text-fg">{displayName}</div>
+            {stats && stats.teams.size > 0 && (
+              <div className="text-caption text-fg-muted">{[...stats.teams].join(' · ')}</div>
+            )}
             {profile ? (
               <Tag tone="accent">@{profile.handle}</Tag>
             ) : (

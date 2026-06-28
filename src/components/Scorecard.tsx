@@ -19,7 +19,7 @@ export default function Scoreboard({ match, state }: { match: Match; state: Inni
           </div>
         </div>
         <div className="shrink-0 text-right text-caption text-fg-muted">
-          <div className="nums">{state.oversText} ov · RR {state.runRate.toFixed(2)}</div>
+          <div className="nums">{state.oversText}/{match.settings.oversPerInnings} ov · RR {state.runRate.toFixed(2)}</div>
           {state.freeHit && <div className="font-semibold text-accent">FREE HIT</div>}
           {state.target != null && state.runsRequired != null && !state.isComplete && (
             <div className="nums text-fg">Need {state.runsRequired} off {state.ballsRemaining}</div>
