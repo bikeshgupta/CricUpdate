@@ -10,6 +10,9 @@ import MatchSetup from './screens/MatchSetup';
 import LiveMatch from './screens/LiveMatch';
 import Players from './screens/Players';
 import PlayerProfile from './screens/PlayerProfile';
+import Squads from './screens/Squads';
+import Tournaments from './screens/Tournaments';
+import TournamentDetail from './screens/TournamentDetail';
 
 export default function App() {
   // Firebase must be configured for the app to run.
@@ -36,8 +39,11 @@ function AppRoutes() {
       <Route path="/match/:id" element={<LiveMatch />} />
       <Route path="/players" element={<Players />} />
       <Route path="/player/:nameKey" element={<PlayerProfile />} />
+      <Route path="/tournament/:id" element={<TournamentDetail />} />
       <Route path="/" element={user ? <Home /> : <Login />} />
       <Route path="/new" element={user ? <MatchSetup /> : <Navigate to="/" replace />} />
+      <Route path="/squads" element={user ? <Squads /> : <Navigate to="/" replace />} />
+      <Route path="/tournaments" element={user ? <Tournaments /> : <Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

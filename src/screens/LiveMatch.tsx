@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { useMatch } from '../store/matchStore';
+import { useSavedPlayers } from '../hooks/useSavedRoster';
+import { dataService } from '../services/dataService';
 import { inningsState, teamById } from '../scoring/match';
-import type { InningsState, Match } from '../scoring/types';
-import { BackButton, Button, Screen, SectionHeader, StickyHeader, Tabs } from '../components/ui';
+import type { InningsState, Match, Team } from '../scoring/types';
+import { BackButton, Button, Screen, SectionHeader, Sheet, StickyHeader, Tabs, TeamBadge } from '../components/ui';
 import Scoreboard from '../components/Scorecard';
 import ScoringPad from '../components/ScoringPad';
 import InningsTable from '../components/InningsTable';
@@ -17,6 +19,7 @@ import { BallIcon, BatIcon, LiveDotIcon } from '../components/icons';
 import PlayerManager from '../components/PlayerManager';
 import ShareBar from '../components/ShareBar';
 import MatchSummary from '../components/MatchSummary';
+import RosterEditor from '../components/RosterEditor';
 
 export default function LiveMatch() {
   const { id } = useParams<{ id: string }>();
@@ -48,6 +51,12 @@ export default function LiveMatch() {
   }
 
   const isOwner = !!user && user.uid === match.ownerUid;
+
+  if (match.status === 'scheduled') {
+    return isOwner
+      ? <ScheduledMatchOwnerView match={match} onBack={() => navigate('/')} />
+      : <ScheduledMatchViewerView match={match} onBack={() => navigate('/')} />;
+  }
 
   if (match.status === 'toss') {
     return (
@@ -345,4 +354,186 @@ function InfoTab({ match }: { match: Match }) {
 function lastBowler(match: Match): string | null {
   const innings = match.status === 'innings2' ? match.innings2 : match.innings1;
   return innings?.balls.at(-1)?.bowler ?? null;
+}
+
+// ---- Scheduled match ----
+function formatScheduledAt(ts?: number): string {
+  if (!ts) return 'Not scheduled yet';
+  return new Date(ts).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+}
+
+function TeamRosterCard({ team }: { team: Team }) {
+  return (
+    <div className="rounded-lg border border-line-strong bg-surface px-3.5 py-3">
+      <div className="flex items-center gap-2.5">
+        <TeamBadge name={team.name} size="sm" />
+        <span className="text-body font-medium text-fg">{team.name}</span>
+        <span className="text-caption text-fg-faint">{team.players.length} players</span>
+      </div>
+      {team.players.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {team.players.map((p) => (
+            <span key={p.id} className="rounded-md border border-line px-2 py-0.5 text-caption text-fg-muted">
+              {p.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScheduledMatchViewerView({ match, onBack }: { match: Match; onBack: () => void }) {
+  return (
+    <Screen>
+      <StickyHeader title={`${match.teamA.name} v ${match.teamB.name}`} left={<BackButton onClick={onBack} />} right={<ShareBar matchId={match.id} compact />} />
+      <div className="px-4 py-4">
+        <div className="rounded-lg border border-line-strong bg-surface px-3.5 py-3 text-center">
+          <div className="text-caption text-fg-muted">Starts</div>
+          <div className="mt-0.5 text-body font-semibold text-fg">{formatScheduledAt(match.scheduledAt)}</div>
+        </div>
+      </div>
+      <div className="space-y-3 px-4 pb-6">
+        <TeamRosterCard team={match.teamA} />
+        <TeamRosterCard team={match.teamB} />
+      </div>
+    </Screen>
+  );
+}
+
+function ScheduledMatchOwnerView({ match, onBack }: { match: Match; onBack: () => void }) {
+  const user = useAuth((s) => s.user)!;
+  const savedPlayers = useSavedPlayers(user.uid);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [newTime, setNewTime] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTab, setEditTab] = useState<'A' | 'B'>('A');
+  const [draftTeamA, setDraftTeamA] = useState(match.teamA);
+  const [draftTeamB, setDraftTeamB] = useState(match.teamB);
+  const [busy, setBusy] = useState(false);
+
+  const startNow = async () => {
+    setBusy(true);
+    try {
+      await dataService.updateMatch({ ...match, status: 'toss' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveReschedule = async () => {
+    if (!newTime) return;
+    setBusy(true);
+    try {
+      await dataService.updateMatch({ ...match, scheduledAt: new Date(newTime).getTime() });
+      setRescheduling(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openEditRoster = () => {
+    setDraftTeamA(match.teamA);
+    setDraftTeamB(match.teamB);
+    setEditTab('A');
+    setEditOpen(true);
+  };
+
+  const saveRoster = async () => {
+    setBusy(true);
+    try {
+      await dataService.updateMatch({ ...match, teamA: draftTeamA, teamB: draftTeamB });
+      setEditOpen(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateActiveTeam = (updater: (t: Team) => Team) => {
+    if (editTab === 'A') setDraftTeamA(updater);
+    else setDraftTeamB(updater);
+  };
+  const activeDraft = editTab === 'A' ? draftTeamA : draftTeamB;
+
+  return (
+    <Screen>
+      <StickyHeader title={`${match.teamA.name} v ${match.teamB.name}`} left={<BackButton onClick={onBack} />} right={<ShareBar matchId={match.id} compact />} />
+
+      <div className="px-4 py-4">
+        <div className="rounded-lg border border-line-strong bg-surface px-3.5 py-3 text-center">
+          <div className="text-caption text-fg-muted">Starts</div>
+          <div className="mt-0.5 text-body font-semibold text-fg">{formatScheduledAt(match.scheduledAt)}</div>
+        </div>
+      </div>
+
+      <div className="space-y-3 px-4 pb-4">
+        <TeamRosterCard team={match.teamA} />
+        <TeamRosterCard team={match.teamB} />
+      </div>
+
+      {rescheduling && (
+        <div className="mx-4 mb-4 space-y-2 rounded-[10px] border border-line-strong bg-surface px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-caption text-fg-muted">New start time</span>
+            <input
+              type="datetime-local"
+              value={newTime}
+              onChange={(e) => setNewTime(e.target.value)}
+              className="rounded-md border border-line-strong bg-surface2 px-2 py-1.5 text-body text-fg outline-none focus:border-accent"
+            />
+          </div>
+          <Button variant="secondary" block disabled={!newTime || busy} onClick={saveReschedule}>
+            Save new time
+          </Button>
+        </div>
+      )}
+
+      <div className="space-y-2 px-4 pb-6">
+        <Button variant="primary" block disabled={busy} onClick={startNow}>
+          Start now
+        </Button>
+        <Button variant="secondary" block disabled={busy} onClick={() => setRescheduling((v) => !v)}>
+          {rescheduling ? 'Cancel reschedule' : 'Reschedule'}
+        </Button>
+        <Button variant="secondary" block disabled={busy} onClick={openEditRoster}>
+          Edit roster
+        </Button>
+      </div>
+
+      <Sheet open={editOpen} onClose={() => setEditOpen(false)} title="Edit roster">
+        <div>
+          <div className="grid grid-cols-2 border-b border-line">
+            {(['A', 'B'] as const).map((slot) => {
+              const t = slot === 'A' ? draftTeamA : draftTeamB;
+              const isActive = editTab === slot;
+              return (
+                <button
+                  key={slot}
+                  onClick={() => setEditTab(slot)}
+                  className={`relative truncate px-3 py-3 text-body font-medium transition duration-150 ${isActive ? 'text-fg' : 'text-fg-muted'}`}
+                >
+                  {t.name}
+                  <span className="ml-1.5 text-caption text-fg-faint">{t.players.length}</span>
+                  {isActive && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" />}
+                </button>
+              );
+            })}
+          </div>
+          <RosterEditor
+            team={activeDraft}
+            suggestions={savedPlayers}
+            onRename={(name) => updateActiveTeam((t) => ({ ...t, name }))}
+            onAdd={(name) => updateActiveTeam((t) => ({ ...t, players: [...t.players, { id: crypto.randomUUID(), name, category: 'gents' }] }))}
+            onRemove={(pid) => updateActiveTeam((t) => ({ ...t, players: t.players.filter((p) => p.id !== pid) }))}
+            onEditPlayer={(pid, name) => updateActiveTeam((t) => ({ ...t, players: t.players.map((p) => (p.id === pid ? { ...p, name } : p)) }))}
+          />
+          <div className="px-4 py-4">
+            <Button variant="primary" block disabled={busy} onClick={saveRoster}>
+              Save roster
+            </Button>
+          </div>
+        </div>
+      </Sheet>
+    </Screen>
+  );
 }

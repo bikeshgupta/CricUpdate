@@ -19,6 +19,27 @@ export interface Team {
   players: Player[];
 }
 
+/** A reusable, named pool of players (e.g. "Friday Office Game") saved per owner. */
+export interface Squad {
+  id: string;
+  ownerUid: string;
+  name: string;
+  players: Player[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type TournamentStatus = 'active' | 'completed';
+
+/** A named group of matches with a derived points table. */
+export interface Tournament {
+  id: string;
+  ownerUid: string;
+  name: string;
+  createdAt: number;
+  status: TournamentStatus;
+}
+
 export type ExtraType = 'none' | 'wide' | 'noball' | 'bye' | 'legbye';
 
 export type WicketType =
@@ -155,7 +176,7 @@ export interface Innings {
   target?: number | null;
 }
 
-export type MatchStatus = 'setup' | 'toss' | 'innings1' | 'innings2' | 'complete';
+export type MatchStatus = 'setup' | 'scheduled' | 'toss' | 'innings1' | 'innings2' | 'complete';
 
 export interface TossResult {
   callingTeamId: string;
@@ -178,4 +199,10 @@ export interface Match {
   innings2: Innings | null;
   /** Final result line, set when status === 'complete'. */
   result: string | null;
+  /** Groups this match into a tournament's points table. */
+  tournamentId?: string;
+  /** Free-text label within a tournament, e.g. "Round 2". */
+  tournamentRoundLabel?: string;
+  /** Epoch ms — set when status === 'scheduled' (planned but not yet started). */
+  scheduledAt?: number;
 }

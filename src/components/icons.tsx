@@ -130,6 +130,18 @@ export function LiveDotIcon({ size = 8, ...rest }: IconProps) {
   );
 }
 
+export function ClipboardListIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" />
+      <path d="M6 6h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" />
+      <path d="M8.5 11h7" />
+      <path d="M8.5 14.5h7" />
+      <path d="M8.5 18h4" />
+    </Base>
+  );
+}
+
 export function TrophyMiniIcon(props: IconProps) {
   return (
     <Base {...props}>

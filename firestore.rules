@@ -13,6 +13,25 @@ service cloud.firestore {
                     && resource.data.ownerUid == request.auth.uid;
     }
 
+    // Reusable named player pools ("squads"), e.g. a recurring Friday game.
+    // Same trust model as matches: public read, owner-only write.
+    match /squads/{squadId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Tournaments are followable like matches (public read); owner manages them.
+    match /tournaments/{tournamentId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
     // Optional per-user profile docs.
     match /users/{uid} {
       allow read: if true;

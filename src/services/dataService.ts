@@ -4,7 +4,7 @@
 // env vars are configured; the app shows a setup notice otherwise.
 // ---------------------------------------------------------------------------
 
-import type { Match } from '../scoring/types';
+import type { Match, Squad, Tournament } from '../scoring/types';
 
 export interface AppUser {
   uid: string;
@@ -36,6 +36,20 @@ export interface DataService {
   getPlayerProfile(nameKey: string): Promise<PlayerProfile | null>;
   isHandleAvailable(handle: string): Promise<boolean>;
   claimPlayerProfile(nameKey: string, displayName: string, handle: string, uid: string): Promise<void>;
+
+  // --- squads (reusable player pools) ---
+  createSquad(squad: Squad): Promise<void>;
+  updateSquad(squad: Squad): Promise<void>;
+  deleteSquad(id: string): Promise<void>;
+  listMySquads(uid: string): Promise<Squad[]>;
+
+  // --- tournaments ---
+  createTournament(tournament: Tournament): Promise<void>;
+  getTournament(id: string): Promise<Tournament | null>;
+  updateTournament(tournament: Tournament): Promise<void>;
+  listMyTournaments(uid: string): Promise<Tournament[]>;
+  /** Matches tagged with this tournament, newest first. */
+  listMatchesByTournament(tournamentId: string): Promise<Match[]>;
 }
 
 export interface PlayerProfile {

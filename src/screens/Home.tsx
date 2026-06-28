@@ -8,7 +8,7 @@ import { addFollowedId, getFollowedIds, removeFollowedId } from '../hooks/useFol
 import { hidePlayer, hideTeam, isPlayerHidden, isTeamHidden } from '../hooks/useHidden';
 import { Button, Screen, SectionHeader, StickyHeader, Tag, TeamBadge, TextInput } from '../components/ui';
 import { Wordmark } from '../components/Logo';
-import { ChevronDownIcon, ChevronRightIcon, JoinIcon, LiveDotIcon, TrashIcon, UsersIcon } from '../components/icons';
+import { ChevronDownIcon, ChevronRightIcon, ClipboardListIcon, JoinIcon, LiveDotIcon, TrashIcon, TrophyMiniIcon, UsersIcon } from '../components/icons';
 
 type Tab = 'matches' | 'teams' | 'players';
 
@@ -22,6 +22,11 @@ function relativeDate(ts: number): string {
 
 function isLive(m: Match): boolean {
   return m.status === 'innings1' || m.status === 'innings2';
+}
+
+function formatScheduledShort(ts?: number): string {
+  if (!ts) return 'Scheduled';
+  return new Date(ts).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 }
 
 function Stat({ value, label, active, onClick }: { value: number | string; label: string; active: boolean; onClick: () => void }) {
@@ -52,6 +57,8 @@ function MatchRow({ match, onClick, joined, onRemove }: { match: Match; onClick:
                 <span className="inline-flex items-center gap-1.5 text-accent">
                   <LiveDotIcon /> Live
                 </span>
+              ) : match.status === 'scheduled' ? (
+                formatScheduledShort(match.scheduledAt)
               ) : (
                 relativeDate(match.createdAt)
               )}
@@ -155,6 +162,10 @@ export default function Home() {
     [matches, visibleFollowed],
   );
   const liveMatches = useMemo(() => allMatches.filter(isLive), [allMatches]);
+  const upcomingMatches = useMemo(
+    () => allMatches.filter((m) => m.status === 'scheduled').sort((a, b) => (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0)),
+    [allMatches],
+  );
 
   const stats = useMemo(() => {
     const teamMap = new Map<string, Set<string>>();
@@ -204,6 +215,12 @@ export default function Home() {
         title={<Wordmark size={18} />}
         right={
           <>
+            <button onClick={() => navigate('/tournaments')} aria-label="Tournaments" className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface">
+              <TrophyMiniIcon size={18} />
+            </button>
+            <button onClick={() => navigate('/squads')} aria-label="Squads" className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface">
+              <ClipboardListIcon size={18} />
+            </button>
             <button onClick={() => navigate('/players')} aria-label="Player stats" className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface">
               <UsersIcon size={18} />
             </button>
@@ -233,6 +250,23 @@ export default function Home() {
         <div>
           <SectionHeader>Join a match</SectionHeader>
           <JoinByCode onJoined={handleJoined} />
+
+          {upcomingMatches.length > 0 && (
+            <>
+              <SectionHeader>Upcoming</SectionHeader>
+              <div className="divide-line border-t border-line">
+                {upcomingMatches.map((m) => (
+                  <MatchRow
+                    key={m.id}
+                    match={m}
+                    onClick={() => navigate(`/match/${m.id}`)}
+                    joined={m.ownerUid !== user.uid}
+                    onRemove={() => handleDelete(m)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
 
           {liveMatches.length > 0 && (
             <>

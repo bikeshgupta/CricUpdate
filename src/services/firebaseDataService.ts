@@ -23,7 +23,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
-import type { Match } from '../scoring/types';
+import type { Match, Squad, Tournament } from '../scoring/types';
 import type { AppUser, DataService, PlayerProfile } from './dataService';
 
 function mapUser(u: User | null): AppUser | null {
@@ -40,6 +40,8 @@ function mapUser(u: User | null): AppUser | null {
 const matchDoc = (id: string) => doc(db!, 'matches', id);
 const profileDoc = (nameKey: string) => doc(db!, 'playerProfiles', nameKey);
 const handleDoc = (handle: string) => doc(db!, 'handles', handle);
+const squadDoc = (id: string) => doc(db!, 'squads', id);
+const tournamentDoc = (id: string) => doc(db!, 'tournaments', id);
 
 export const firebaseDataService: DataService = {
   async signInWithGoogle() {
@@ -114,5 +116,54 @@ export const firebaseDataService: DataService = {
     const profile: PlayerProfile = { nameKey, name: displayName, handle, claimedByUid: uid, claimedAt: Date.now() };
     await setDoc(handleDoc(handle), { uid, claimedAt: profile.claimedAt });
     await setDoc(profileDoc(nameKey), profile as DocumentData);
+  },
+
+  async createSquad(squad) {
+    await setDoc(squadDoc(squad.id), squad as DocumentData);
+  },
+
+  async updateSquad(squad) {
+    await setDoc(squadDoc(squad.id), squad as DocumentData);
+  },
+
+  async deleteSquad(id) {
+    await deleteDoc(squadDoc(id));
+  },
+
+  async listMySquads(uid) {
+    const q = query(collection(db!, 'squads'), where('ownerUid', '==', uid));
+    const snap = await getDocs(q);
+    const squads: Squad[] = [];
+    snap.forEach((d) => squads.push(d.data() as Squad));
+    return squads.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+
+  async createTournament(tournament) {
+    await setDoc(tournamentDoc(tournament.id), tournament as DocumentData);
+  },
+
+  async getTournament(id) {
+    const snap = await getDoc(tournamentDoc(id));
+    return snap.exists() ? (snap.data() as Tournament) : null;
+  },
+
+  async updateTournament(tournament) {
+    await setDoc(tournamentDoc(tournament.id), tournament as DocumentData);
+  },
+
+  async listMyTournaments(uid) {
+    const q = query(collection(db!, 'tournaments'), where('ownerUid', '==', uid));
+    const snap = await getDocs(q);
+    const tournaments: Tournament[] = [];
+    snap.forEach((d) => tournaments.push(d.data() as Tournament));
+    return tournaments.sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  async listMatchesByTournament(tournamentId) {
+    const q = query(collection(db!, 'matches'), where('tournamentId', '==', tournamentId));
+    const snap = await getDocs(q);
+    const matches: Match[] = [];
+    snap.forEach((d) => matches.push(d.data() as Match));
+    return matches.sort((a, b) => b.createdAt - a.createdAt);
   },
 };

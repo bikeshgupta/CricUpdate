@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { useMatch } from '../store/matchStore';
 import { useSavedPlayers, useSavedTeams } from '../hooks/useSavedRoster';
-import { DEFAULT_SETTINGS, type Match, type MatchSettings, type Player, type Team } from '../scoring/types';
+import { useSquads } from '../hooks/useSquads';
+import { dataService } from '../services/dataService';
+import { DEFAULT_SETTINGS, type Match, type MatchSettings, type Player, type Squad, type Team } from '../scoring/types';
 import {
   AutocompleteInput,
   BackButton,
@@ -19,15 +21,36 @@ import {
   TeamBadge,
   TextInput,
 } from '../components/ui';
-import { CheckIcon, CloseIcon, EditIcon, TrashIcon } from '../components/icons';
+import { TrashIcon } from '../components/icons';
+import RosterEditor from '../components/RosterEditor';
 
 type DraftTeam = Team; // { id, name, players: Player[] }
+type Mode = 'predefined' | 'adhoc';
+type Step = 'mode' | 'pick' | 'pool' | 'split' | 'roster';
 
 const PRESET_OVERS = [2, 5, 6, 8, 10, 20];
 const CUSTOM_OVERS_SENTINEL = -1;
+const MIN_POOL_SIZE = 4;
+
+const STEP_TITLES: Record<Step, string> = {
+  mode: 'New match',
+  pick: 'New match',
+  pool: 'Pick players',
+  split: 'Split teams',
+  roster: 'Add players',
+};
 
 function newTeam(name = ''): DraftTeam {
   return { id: crypto.randomUUID(), name, players: [] };
+}
+
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,10 +59,14 @@ export default function MatchSetup() {
   const user = useAuth((s) => s.user)!;
   const createMatch = useMatch((s) => s.createMatch);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tournamentId = searchParams.get('tournamentId') || undefined;
   const savedTeams = useSavedTeams(user.uid);
   const savedPlayers = useSavedPlayers(user.uid);
+  const { squads } = useSquads(user.uid);
 
-  const [step, setStep] = useState<'pick' | 'roster'>('pick');
+  const [step, setStep] = useState<Step>('mode');
+  const [mode, setMode] = useState<Mode>('predefined');
   const [teamA, setTeamA] = useState<DraftTeam | null>(null);
   const [teamB, setTeamB] = useState<DraftTeam | null>(null);
   const [tab, setTab] = useState<'A' | 'B'>('A');
@@ -48,8 +75,19 @@ export default function MatchSetup() {
   const [settings, setSettings] = useState<MatchSettings>(DEFAULT_SETTINGS);
   const [showRules, setShowRules] = useState(false);
 
-  // team-picker sheet
+  // team-picker sheet (pre-defined path)
   const [pickSlot, setPickSlot] = useState<'A' | 'B' | null>(null);
+
+  // ad-hoc pool step
+  const [pool, setPool] = useState<Player[]>([]);
+  const [poolDraft, setPoolDraft] = useState('');
+  const [loadSquadOpen, setLoadSquadOpen] = useState(false);
+  const [saveSquadName, setSaveSquadName] = useState('');
+  const [savingSquad, setSavingSquad] = useState(false);
+
+  // schedule-for-later (ad-hoc path)
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState('');
 
   const teamsChosen = !!teamA && !!teamB;
   const ready = !!teamA && !!teamB && teamA.players.length >= 2 && teamB.players.length >= 2 && teamA.name.trim() && teamB.name.trim();
@@ -72,14 +110,79 @@ export default function MatchSetup() {
   };
   const activeTeam = tab === 'A' ? teamA : teamB;
 
-  const start = async () => {
-    if (!ready || !teamA || !teamB) return;
+  // --- ad-hoc pool ---
+  const addDraftToPool = () => {
+    const name = poolDraft.trim();
+    if (!name) return;
+    setPool((p) => [...p, { id: crypto.randomUUID(), name, category: 'gents' }]);
+    setPoolDraft('');
+  };
+  const removeFromPool = (pid: string) => setPool((p) => p.filter((x) => x.id !== pid));
+  const loadSquad = (s: Squad) => {
+    setPool((p) => {
+      const existing = new Set(p.map((x) => x.name.trim().toLowerCase()));
+      const fresh = s.players
+        .filter((pl) => !existing.has(pl.name.trim().toLowerCase()))
+        .map<Player>((pl) => ({ id: crypto.randomUUID(), name: pl.name, category: 'gents' }));
+      return [...p, ...fresh];
+    });
+    setLoadSquadOpen(false);
+  };
+  const saveSquad = async () => {
+    const name = saveSquadName.trim();
+    if (!name || pool.length === 0 || savingSquad) return;
+    setSavingSquad(true);
+    try {
+      const now = Date.now();
+      await dataService.createSquad({ id: crypto.randomUUID(), ownerUid: user.uid, name, players: pool, createdAt: now, updatedAt: now });
+      setSaveSquadName('');
+    } finally {
+      setSavingSquad(false);
+    }
+  };
+
+  // --- split into two sides ---
+  const autoBalance = () => {
+    const mixed = shuffled(pool);
+    const half = Math.ceil(mixed.length / 2);
+    setTeamA({ id: crypto.randomUUID(), name: teamA?.name || 'Team 1', players: mixed.slice(0, half) });
+    setTeamB({ id: crypto.randomUUID(), name: teamB?.name || 'Team 2', players: mixed.slice(half) });
+  };
+  const goToSplit = () => {
+    setStep('split');
+    if (!teamA || !teamB) autoBalance();
+  };
+  const moveToOtherTeam = (pid: string, from: 'A' | 'B') => {
+    if (!teamA || !teamB) return;
+    if (from === 'A') {
+      const player = teamA.players.find((p) => p.id === pid);
+      if (!player) return;
+      setTeamA({ ...teamA, players: teamA.players.filter((p) => p.id !== pid) });
+      setTeamB({ ...teamB, players: [...teamB.players, player] });
+    } else {
+      const player = teamB.players.find((p) => p.id === pid);
+      if (!player) return;
+      setTeamB({ ...teamB, players: teamB.players.filter((p) => p.id !== pid) });
+      setTeamA({ ...teamA, players: [...teamA.players, player] });
+    }
+  };
+
+  const handleBack = () => {
+    if (step === 'pick') setStep('mode');
+    else if (step === 'pool') setStep('mode');
+    else if (step === 'split') setStep('pool');
+    else if (step === 'roster') setStep(mode === 'adhoc' ? 'split' : 'pick');
+    else navigate('/');
+  };
+
+  const buildMatch = (status: Match['status']): Match | null => {
+    if (!ready || !teamA || !teamB) return null;
     const id = crypto.randomUUID().slice(0, 8);
-    const match: Match = {
+    return {
       id,
       ownerUid: user.uid,
       createdAt: Date.now(),
-      status: 'toss',
+      status,
       settings: { ...settings, oversPerInnings: overs, playersPerTeam: Math.max(teamA.players.length, teamB.players.length) },
       teamA: { ...teamA, id: 'teamA' },
       teamB: { ...teamB, id: 'teamB' },
@@ -87,19 +190,52 @@ export default function MatchSetup() {
       innings1: null,
       innings2: null,
       result: null,
+      ...(tournamentId ? { tournamentId } : {}),
+      ...(status === 'scheduled' && scheduleAt ? { scheduledAt: new Date(scheduleAt).getTime() } : {}),
     };
+  };
+
+  const start = async () => {
+    const match = buildMatch('toss');
+    if (!match) return;
     await createMatch(match);
-    navigate(`/match/${id}`);
+    navigate(`/match/${match.id}`);
+  };
+
+  const scheduleForLater = async () => {
+    if (!scheduleAt) return;
+    const match = buildMatch('scheduled');
+    if (!match) return;
+    await createMatch(match);
+    navigate(`/match/${match.id}`);
   };
 
   return (
     <Screen>
-      <StickyHeader
-        title={step === 'pick' ? 'New match' : 'Add players'}
-        left={<BackButton onClick={() => (step === 'roster' ? setStep('pick') : navigate('/'))} />}
-      />
+      <StickyHeader title={STEP_TITLES[step]} left={<BackButton onClick={handleBack} />} />
 
-      {step === 'pick' ? (
+      {step === 'mode' && (
+        <div className="flex-1 space-y-3 px-4 pt-5">
+          <ModeCard
+            title="Pre-defined teams"
+            subtitle="Pick two saved teams, or build a fresh roster for each side."
+            onTap={() => {
+              setMode('predefined');
+              setStep('pick');
+            }}
+          />
+          <ModeCard
+            title="Pick players on the spot"
+            subtitle="Build today's pool of players, then auto-split into two sides — tap to override."
+            onTap={() => {
+              setMode('adhoc');
+              setStep('pool');
+            }}
+          />
+        </div>
+      )}
+
+      {step === 'pick' && (
         <div className="flex-1">
           <div className="flex items-stretch gap-3 px-4 pb-2 pt-5">
             <TeamCard team={teamA} onTap={() => setPickSlot('A')} />
@@ -115,7 +251,83 @@ export default function MatchSetup() {
             </Button>
           </div>
         </div>
-      ) : (
+      )}
+
+      {step === 'pool' && (
+        <div className="flex-1">
+          <div className="px-4 pb-2 pt-4 text-caption text-fg-faint">
+            Add everyone who's here today. You'll split into two sides next.
+          </div>
+          <div className="flex items-center gap-2 px-4 pb-2">
+            <div className="flex-1">
+              <AutocompleteInput value={poolDraft} onChange={setPoolDraft} suggestions={savedPlayers} onSubmit={addDraftToPool} placeholder="Add player name" />
+            </div>
+            <Button variant="secondary" onClick={addDraftToPool} disabled={!poolDraft.trim()} className="shrink-0 px-4">
+              Add
+            </Button>
+          </div>
+          <button onClick={() => setLoadSquadOpen(true)} className="mx-4 mb-2 block text-caption font-medium text-accent">
+            Load a saved squad
+          </button>
+
+          {pool.length > 0 && (
+            <div className="divide-line border-t border-line">
+              {pool.map((p, i) => (
+                <div key={p.id} className="row justify-between">
+                  <span className="flex items-center gap-3 text-body text-fg">
+                    <span className="text-caption text-fg-faint">{i + 1}</span>
+                    {p.name}
+                  </span>
+                  <button onClick={() => removeFromPool(p.id)} aria-label="Remove player" className="flex h-8 w-8 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-error">
+                    <TrashIcon size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pool.length > 0 && (
+            <div className="flex items-center gap-2 border-y border-line px-4 py-2.5">
+              <div className="flex-1">
+                <TextInput value={saveSquadName} onChange={(e) => setSaveSquadName(e.target.value)} placeholder="Save this pool as a squad (optional)" />
+              </div>
+              <Button variant="secondary" onClick={saveSquad} disabled={!saveSquadName.trim() || savingSquad} className="shrink-0 px-4">
+                {savingSquad ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          )}
+
+          <div className="sticky bottom-0 mt-5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <Button variant="primary" block disabled={pool.length < MIN_POOL_SIZE} onClick={goToSplit}>
+              {pool.length < MIN_POOL_SIZE ? `Add at least ${MIN_POOL_SIZE} players (${pool.length}/${MIN_POOL_SIZE})` : 'Continue'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 'split' && (
+        <div className="flex-1">
+          <div className="px-4 pb-2 pt-4 text-caption text-fg-faint">
+            Auto-balanced into two even sides — tap a player to move them across, or re-shuffle.
+          </div>
+          <div className="px-4 pb-3">
+            <Button variant="secondary" block onClick={autoBalance}>
+              Re-shuffle teams
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 px-4">
+            <SplitColumn team={teamA} onRename={(name) => setTeamA((t) => (t ? { ...t, name } : t))} onTapPlayer={(pid) => moveToOtherTeam(pid, 'A')} />
+            <SplitColumn team={teamB} onRename={(name) => setTeamB((t) => (t ? { ...t, name } : t))} onTapPlayer={(pid) => moveToOtherTeam(pid, 'B')} />
+          </div>
+          <div className="sticky bottom-0 mt-5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <Button variant="primary" block disabled={!teamA?.players.length || !teamB?.players.length} onClick={() => setStep('roster')}>
+              Continue
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 'roster' && (
         <div className="flex-1">
           <div className="grid grid-cols-2 border-b border-line">
             {(['A', 'B'] as const).map((slot) => {
@@ -185,6 +397,30 @@ export default function MatchSetup() {
           {showRules && <RulesEditor settings={settings} setSettings={setSettings} />}
 
           <div className="sticky bottom-0 mt-6 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            {mode === 'adhoc' && (
+              <div className="mb-2">
+                {!scheduling ? (
+                  <button onClick={() => setScheduling(true)} className="block w-full pb-2 text-center text-caption font-medium text-accent">
+                    Schedule for later instead
+                  </button>
+                ) : (
+                  <div className="mb-2 space-y-2 rounded-[10px] border border-line-strong bg-surface px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-caption text-fg-muted">Starts at</span>
+                      <input
+                        type="datetime-local"
+                        value={scheduleAt}
+                        onChange={(e) => setScheduleAt(e.target.value)}
+                        className="rounded-md border border-line-strong bg-surface2 px-2 py-1.5 text-body text-fg outline-none focus:border-accent"
+                      />
+                    </div>
+                    <Button variant="secondary" block disabled={!ready || !scheduleAt} onClick={scheduleForLater}>
+                      Save scheduled match
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
             <Button variant="primary" block disabled={!ready} onClick={start}>
               {ready ? 'Start match' : 'Add at least 2 players per team'}
             </Button>
@@ -200,7 +436,50 @@ export default function MatchSetup() {
         onCreateNew={() => choose(newTeam(pickSlot === 'A' ? 'Team A' : 'Team B'))}
         onSelectExisting={(t) => choose(importTeam(t))}
       />
+
+      <Sheet open={loadSquadOpen} onClose={() => setLoadSquadOpen(false)} title="Load a squad">
+        {squads.length === 0 ? (
+          <div className="py-3 text-center text-caption text-fg-faint">No saved squads yet.</div>
+        ) : (
+          <div className="divide-line overflow-hidden rounded-lg border border-line-strong">
+            {squads.map((s) => (
+              <button key={s.id} onClick={() => loadSquad(s)} className="row w-full justify-between bg-surface hover:bg-surface2">
+                <span className="text-body text-fg">{s.name}</span>
+                <span className="text-caption text-fg-muted">{s.players.length} players ›</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </Sheet>
     </Screen>
+  );
+}
+
+function ModeCard({ title, subtitle, onTap }: { title: string; subtitle: string; onTap: () => void }) {
+  return (
+    <button onClick={onTap} className="block w-full rounded-[10px] border border-line-strong bg-surface px-4 py-4 text-left transition duration-150 active:opacity-80">
+      <div className="text-item font-semibold text-fg">{title}</div>
+      <div className="mt-1 text-caption text-fg-muted">{subtitle}</div>
+    </button>
+  );
+}
+
+function SplitColumn({ team, onRename, onTapPlayer }: { team: DraftTeam | null; onRename: (name: string) => void; onTapPlayer: (pid: string) => void }) {
+  if (!team) return null;
+  return (
+    <div className="rounded-[10px] border border-line-strong bg-surface">
+      <div className="border-b border-line px-2.5 py-2">
+        <TextInput value={team.name} onChange={(e) => onRename(e.target.value)} placeholder="Team name" />
+      </div>
+      <div className="divide-line">
+        {team.players.map((p) => (
+          <button key={p.id} onClick={() => onTapPlayer(p.id)} className="block w-full px-2.5 py-2 text-left text-body text-fg transition duration-150 hover:bg-surface2">
+            {p.name}
+          </button>
+        ))}
+        {team.players.length === 0 && <div className="px-2.5 py-3 text-caption text-fg-faint">No players</div>}
+      </div>
+    </div>
   );
 }
 
@@ -223,97 +502,6 @@ function TeamCard({ team, onTap }: { team: DraftTeam | null; onTap: () => void }
         </>
       )}
     </button>
-  );
-}
-
-function RosterEditor({
-  team,
-  suggestions,
-  onRename,
-  onAdd,
-  onRemove,
-  onEditPlayer,
-}: {
-  team: DraftTeam;
-  suggestions: string[];
-  onRename: (name: string) => void;
-  onAdd: (name: string) => void;
-  onRemove: (id: string) => void;
-  onEditPlayer: (id: string, name: string) => void;
-}) {
-  const [draft, setDraft] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
-
-  const add = () => {
-    const t = draft.trim();
-    if (!t) return;
-    onAdd(t);
-    setDraft('');
-  };
-  const startEdit = (id: string, name: string) => {
-    setEditingId(id);
-    setEditingName(name);
-  };
-  const saveEdit = () => {
-    const t = editingName.trim();
-    if (editingId && t) onEditPlayer(editingId, t);
-    setEditingId(null);
-  };
-
-  return (
-    <div>
-      <div className="px-4 py-3">
-        <TextInput value={team.name} onChange={(e) => onRename(e.target.value)} placeholder="Team name" />
-      </div>
-      {team.players.length > 0 && (
-        <div className="divide-line border-t border-line">
-          {team.players.map((p, i) =>
-            editingId === p.id ? (
-              <div key={p.id} className="row gap-2 justify-between">
-                <span className="shrink-0 text-caption text-fg-faint">{i + 1}</span>
-                <TextInput
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
-                  autoFocus
-                  className="flex-1"
-                />
-                <button onClick={saveEdit} aria-label="Save" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-accent hover:bg-surface2">
-                  <CheckIcon size={16} />
-                </button>
-                <button onClick={() => setEditingId(null)} aria-label="Cancel" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-fg">
-                  <CloseIcon size={16} />
-                </button>
-              </div>
-            ) : (
-              <div key={p.id} className="row justify-between">
-                <span className="flex items-center gap-3 text-body text-fg">
-                  <span className="text-caption text-fg-faint">{i + 1}</span>
-                  {p.name}
-                </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <button onClick={() => startEdit(p.id, p.name)} aria-label="Edit player" className="flex h-8 w-8 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-fg">
-                    <EditIcon size={16} />
-                  </button>
-                  <button onClick={() => onRemove(p.id)} aria-label="Remove player" className="flex h-8 w-8 items-center justify-center rounded-md text-fg-faint hover:bg-surface2 hover:text-error">
-                    <TrashIcon size={16} />
-                  </button>
-                </span>
-              </div>
-            ),
-          )}
-        </div>
-      )}
-      <div className="flex items-center gap-2 border-y border-line px-4 py-2.5">
-        <div className="flex-1">
-          <AutocompleteInput value={draft} onChange={setDraft} suggestions={suggestions} onSubmit={add} placeholder="Add player name" />
-        </div>
-        <Button variant="secondary" onClick={add} disabled={!draft.trim()} className="shrink-0 px-4">
-          Add
-        </Button>
-      </div>
-    </div>
   );
 }
 
