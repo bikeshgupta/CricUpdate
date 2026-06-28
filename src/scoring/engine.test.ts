@@ -254,6 +254,64 @@ describe('wickets', () => {
   });
 });
 
+describe('retired batter', () => {
+  it('does not count toward wickets, vacates the crease, and is not a legal ball', () => {
+    const s = computeInnings(
+      inn([ball({ striker: 'a1', nonStriker: 'a2', bowler: 'b1', isWicket: true, wicketType: 'retired', dismissedPlayerId: 'a1' })]),
+      settings(),
+      batting,
+    );
+    expect(s.wickets).toBe(0);
+    expect(s.legalBalls).toBe(0);
+    expect(s.batters['a1'].out).toBe(false);
+    expect(s.batters['a1'].retired).toBe(true);
+    expect(s.strikerId).toBeNull(); // a new batter is required
+    expect(s.nonStrikerId).toBe('a2');
+  });
+
+  it('does not credit the bowler and does not trigger all-out', () => {
+    const outBall = (striker: string, non: string) =>
+      ball({ striker, nonStriker: non, bowler: 'b1', isWicket: true, wicketType: 'bowled' });
+    const s = computeInnings(
+      inn([
+        outBall('a1', 'a2'),
+        outBall('a3', 'a2'),
+        outBall('a4', 'a2'),
+        ball({ striker: 'a2', nonStriker: 'a5', bowler: 'b1', isWicket: true, wicketType: 'retired', dismissedPlayerId: 'a2' }),
+      ]),
+      settings(),
+      batting,
+    );
+    expect(s.wickets).toBe(3); // the retirement is not a 4th wicket
+    expect(s.isComplete).toBe(false);
+    expect(s.bowlers['b1'].wickets).toBe(3);
+  });
+
+  it('lets a retired batter return and keep accumulating their stats', () => {
+    const balls = [
+      legal(4), // a1 scores 4, even runs -> keeps strike
+      ball({ striker: 'a1', nonStriker: 'a2', bowler: 'b1', isWicket: true, wicketType: 'retired', dismissedPlayerId: 'a1' }),
+    ];
+    let s = computeInnings(inn(balls), settings(), batting);
+    expect(s.strikerId).toBeNull(); // a1's slot is vacated
+    expect(s.nonStrikerId).toBe('a2');
+    expect(s.batters['a1'].retired).toBe(true);
+    expect(s.batters['a1'].runs).toBe(4);
+
+    // a3 comes in for the vacated slot, then a1 returns later when a3 is out.
+    const withReturn = [
+      ...balls,
+      ball({ striker: 'a3', nonStriker: 'a2', bowler: 'b1', isWicket: true, wicketType: 'bowled' }),
+      ball({ striker: 'a1', nonStriker: 'a2', bowler: 'b1', batterRuns: 2 }),
+    ];
+    s = computeInnings(inn(withReturn), settings(), batting);
+    expect(s.batters['a1'].out).toBe(false);
+    expect(s.batters['a1'].retired).toBe(true);
+    expect(s.batters['a1'].runs).toBe(6); // 4 before retiring + 2 after returning
+    expect(s.strikerId).toBe('a1');
+  });
+});
+
 describe('innings completion by overs', () => {
   it('completes when overs are bowled out', () => {
     const balls = Array.from({ length: 6 }, () => legal(1));

@@ -44,6 +44,9 @@ export function commentaryFor(ball: BallEvent, match: Match): string {
 
   if (ball.isWicket) {
     const out = playerName(match, ball.dismissedPlayerId ?? ball.striker);
+    if (ball.wicketType === 'retired') {
+      return `${out} retires — can return later in the innings.`;
+    }
     const how = dismissalText(ball, match);
     return `${head}OUT! ${out} ${how}`;
   }

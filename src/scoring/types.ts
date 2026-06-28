@@ -116,6 +116,8 @@ export interface BatterStats {
   wicketType?: WicketType;
   outBowlerId?: string;
   outFielderId?: string;
+  /** Retired (not permanently out) — can return to bat when a new batter is needed. */
+  retired?: boolean;
 }
 
 export interface BowlerStats {

@@ -26,6 +26,8 @@ function emptyBowler(playerId: string): BowlerStats {
 }
 
 export function isLegalDelivery(ball: BallEvent, settings: MatchSettings): boolean {
+  // A retirement isn't a delivery at all — it doesn't consume a ball.
+  if (ball.wicketType === 'retired') return false;
   if (ball.extra === 'wide') return !settings.reBowlWide;
   if (ball.extra === 'noball') return !settings.reBowlNoBall;
   return true;
@@ -39,6 +41,7 @@ export function formatOvers(legalBalls: number): string {
 export function ballToken(ball: BallEvent, settings: MatchSettings): string {
   const ran = effectiveExtraRuns(ball, settings);
   if (ball.isWicket) {
+    if (ball.wicketType === 'retired') return 'Ret';
     // A wide/no-ball that also produced a wicket (run out) shows both.
     if (ball.extra === 'wide') return `${ran ? ran : ''}Wd+W`;
     if (ball.extra === 'noball') return `${ball.batterRuns || ''}Nb+W`;
@@ -232,18 +235,25 @@ export function computeInnings(
     // Wicket handling (respecting free-hit protection).
     if (ball.isWicket) {
       const wt = ball.wicketType;
-      const protectedByFreeHit = freeHit && wt !== 'runout';
-      if (!protectedByFreeHit) {
-        wickets += 1;
+      if (wt === 'retired') {
+        // Not a dismissal: doesn't count toward wickets/all-out, and the
+        // player remains selectable again as a replacement batter later.
         const outId = ball.dismissedPlayerId ?? ball.striker;
-        const outBatter = ensureBatter(outId);
-        outBatter.out = true;
-        outBatter.wicketType = wt;
-        if (wt !== 'runout') {
-          outBatter.outBowlerId = ball.bowler;
-          bowler.wickets += 1;
+        ensureBatter(outId).retired = true;
+      } else {
+        const protectedByFreeHit = freeHit && wt !== 'runout';
+        if (!protectedByFreeHit) {
+          wickets += 1;
+          const outId = ball.dismissedPlayerId ?? ball.striker;
+          const outBatter = ensureBatter(outId);
+          outBatter.out = true;
+          outBatter.wicketType = wt;
+          if (wt !== 'runout') {
+            outBatter.outBowlerId = ball.bowler;
+            bowler.wickets += 1;
+          }
+          outBatter.outFielderId = ball.fielderId;
         }
-        outBatter.outFielderId = ball.fielderId;
       }
     }
 

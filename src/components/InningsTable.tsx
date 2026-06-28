@@ -4,7 +4,11 @@ import type { InningsState, Match } from '../scoring/types';
 
 export function wicketLabel(state: InningsState, match: Match, batterId: string): string {
   const b = state.batters[batterId];
-  if (!b?.out) return state.strikerId === batterId || state.nonStrikerId === batterId ? 'not out' : '';
+  const atCrease = state.strikerId === batterId || state.nonStrikerId === batterId;
+  if (!b?.out) {
+    if (atCrease) return 'not out';
+    return b?.retired ? 'retired' : '';
+  }
   switch (b.wicketType) {
     case 'runout':
       return 'run out';

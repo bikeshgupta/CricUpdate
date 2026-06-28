@@ -17,7 +17,7 @@ const WICKET_TYPES: { type: WicketType; label: string }[] = [
   { type: 'hitwicket', label: 'Hit wkt' },
 ];
 
-type SheetId = 'wide' | 'noball' | 'bye' | 'legbye' | 'wicket' | 'edit';
+type SheetId = 'wide' | 'noball' | 'bye' | 'legbye' | 'wicket' | 'edit' | 'retire';
 
 // Compact square control — solid raised surface, hairline edge, tactile press feedback.
 const tile =
@@ -88,6 +88,14 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
         Wicket
       </button>
 
+      {/* retire — separate from a genuine dismissal, batter can return later */}
+      <button
+        onClick={() => setSheet('retire')}
+        className="flex h-9 w-full items-center justify-center rounded-[10px] border border-line-strong bg-surface text-caption font-medium text-fg-muted transition duration-100 active:scale-[0.97]"
+      >
+        Retire batter
+      </button>
+
       {/* undo / edit — secondary, de-emphasized */}
       <div className="flex justify-end gap-4 pt-1">
         <button onClick={undoLastBall} className="text-caption font-medium text-fg-muted transition duration-100 active:opacity-60">
@@ -125,6 +133,25 @@ export default function ScoringPad({ match, state }: { match: Match; state: Inni
         bowlingPlayers={bowlingTeam.players}
         onConfirm={(payload) => { recordBall({ isWicket: true, ...payload }); close(); }}
       />
+
+      <Sheet open={sheet === 'retire'} onClose={close} title="Retire batter">
+        <div className="space-y-3">
+          <p className="text-caption text-fg-muted">
+            Not out — they can come back in later, whenever the team needs a new batter.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[state.strikerId, state.nonStrikerId].filter(Boolean).map((id) => (
+              <button
+                key={id}
+                onClick={() => { recordBall({ isWicket: true, wicketType: 'retired', dismissedPlayerId: id! }); close(); }}
+                className="rounded-[10px] border border-line-strong bg-surface2 px-3 py-3 text-body font-medium text-fg transition duration-100 active:scale-[0.95]"
+              >
+                {playerName(match, id)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Sheet>
 
       <Sheet open={sheet === 'edit'} onClose={close} title="Edit last ball">
         {lastBall ? (
