@@ -4,7 +4,7 @@ import { useAuth } from '../store/authStore';
 import { useTournaments } from '../hooks/useTournaments';
 import { dataService } from '../services/dataService';
 import type { Tournament } from '../scoring/types';
-import { BackButton, Button, Screen, SectionHeader, Sheet, StickyHeader, Tag, TextInput } from '../components/ui';
+import { BackButton, Button, Screen, SectionHeader, Sheet, StickyHeader, StatusText, TextInput } from '../components/ui';
 import { TrophyMiniIcon } from '../components/icons';
 
 export default function Tournaments() {
@@ -57,8 +57,8 @@ export default function Tournaments() {
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface2 text-fg-muted">
                 <TrophyMiniIcon size={18} />
               </span>
-              <span className="min-w-0 flex-1 truncate text-body text-fg">{t.name}</span>
-              {t.status === 'completed' && <Tag>Completed</Tag>}
+              <span className="min-w-0 flex-1 truncate text-body font-medium text-fg">{t.name}</span>
+              {t.status === 'completed' && <StatusText>Completed</StatusText>}
             </button>
           ))}
         </div>

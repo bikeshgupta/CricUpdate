@@ -176,7 +176,18 @@ export interface Innings {
   target?: number | null;
 }
 
-export type MatchStatus = 'setup' | 'scheduled' | 'toss' | 'innings1' | 'innings2' | 'complete';
+export type MatchStatus = 'setup' | 'planning' | 'scheduled' | 'toss' | 'innings1' | 'innings2' | 'complete';
+
+export type GroundStatus = 'pending' | 'confirmed';
+
+/** A self-RSVP against a 'planning' match, recorded via its public shareable link. */
+export interface Rsvp {
+  id: string;
+  matchId: string;
+  name: string;
+  uid?: string;
+  respondedAt: number;
+}
 
 export interface TossResult {
   callingTeamId: string;
@@ -205,4 +216,9 @@ export interface Match {
   tournamentRoundLabel?: string;
   /** Epoch ms — set when status === 'scheduled' (planned but not yet started). */
   scheduledAt?: number;
+  /** Working pool of invited/confirmed players for a 'planning' match, before teams are split on the day. */
+  pool?: Player[];
+  groundName?: string;
+  groundAddress?: string;
+  groundStatus?: GroundStatus;
 }

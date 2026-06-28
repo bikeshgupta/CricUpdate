@@ -4,7 +4,7 @@ import { useAuth } from '../store/authStore';
 import { dataService } from '../services/dataService';
 import { computeStandings } from '../scoring/standings';
 import type { Match, Tournament } from '../scoring/types';
-import { BackButton, Button, Screen, SectionHeader, StickyHeader, Tag, TeamBadge } from '../components/ui';
+import { BackButton, Button, Screen, SectionHeader, StickyHeader, StatusText } from '../components/ui';
 import { LiveDotIcon, TrophyMiniIcon } from '../components/icons';
 
 function isLive(m: Match): boolean {
@@ -20,8 +20,8 @@ function MatchStatusTag({ match }: { match: Match }) {
     );
   }
   if (match.status === 'complete') return <span className="truncate text-caption text-success">{match.result}</span>;
-  if (match.status === 'scheduled') return <Tag>Scheduled</Tag>;
-  return <Tag>{match.status}</Tag>;
+  if (match.status === 'scheduled') return <StatusText>Scheduled</StatusText>;
+  return <StatusText>{match.status}</StatusText>;
 }
 
 export default function TournamentDetail() {
@@ -67,7 +67,7 @@ export default function TournamentDetail() {
         <div className="flex items-center gap-2 rounded-lg border border-line-strong px-3 py-2.5">
           <TrophyMiniIcon size={18} className="shrink-0 text-fg-muted" />
           <span className="truncate text-body font-medium text-fg">{tournament.name}</span>
-          {tournament.status === 'completed' && <Tag>Completed</Tag>}
+          {tournament.status === 'completed' && <StatusText>Completed</StatusText>}
         </div>
       </div>
 
@@ -124,7 +124,6 @@ export default function TournamentDetail() {
               onClick={() => navigate(`/match/${m.id}`)}
               className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition duration-150 hover:bg-surface"
             >
-              <TeamBadge name={m.teamA.name} size="sm" />
               <div className="min-w-0 flex-1">
                 <span className="truncate text-item font-medium text-fg">
                   {m.teamA.name} <span className="text-fg-faint">v</span> {m.teamB.name}

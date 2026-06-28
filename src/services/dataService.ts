@@ -4,7 +4,7 @@
 // env vars are configured; the app shows a setup notice otherwise.
 // ---------------------------------------------------------------------------
 
-import type { Match, Squad, Tournament } from '../scoring/types';
+import type { Match, Rsvp, Squad, Tournament } from '../scoring/types';
 
 export interface AppUser {
   uid: string;
@@ -50,6 +50,11 @@ export interface DataService {
   listMyTournaments(uid: string): Promise<Tournament[]>;
   /** Matches tagged with this tournament, newest first. */
   listMatchesByTournament(tournamentId: string): Promise<Match[]>;
+
+  // --- RSVPs (against a 'planning' match) ---
+  addRsvp(rsvp: Rsvp): Promise<void>;
+  /** Live subscription, oldest first. Returns an unsubscribe fn. */
+  subscribeRsvps(matchId: string, cb: (rsvps: Rsvp[]) => void): () => void;
 }
 
 export interface PlayerProfile {

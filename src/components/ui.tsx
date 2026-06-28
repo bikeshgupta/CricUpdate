@@ -213,44 +213,15 @@ export function ControlRow({ label, hint, children }: { label: ReactNode; hint?:
   );
 }
 
-// Rounded-square team badge with a deterministic, muted background colour.
-const BADGE_COLORS = ['#1F6F66', '#3B5BA5', '#97653A', '#6B4E9E', '#3E7C4F', '#9E4A57', '#2E7D8A', '#7A6A3A'];
-
-function hashIndex(str: string, mod: number): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  return h % mod;
-}
-
-export function TeamBadge({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = { sm: 'h-8 w-8 text-[12px]', md: 'h-10 w-10 text-[14px]', lg: 'h-14 w-14 text-[20px]' };
-  const bg = BADGE_COLORS[hashIndex(name || '?', BADGE_COLORS.length)];
-  const initials =
-    (name || '?')
-      .trim()
-      .split(/\s+/)
-      .map((w) => w[0])
-      .slice(0, 2)
-      .join('') || '?';
-  return (
-    <span className={`badge-team ${sizes[size]}`} style={{ backgroundColor: bg }}>
-      {initials}
-    </span>
-  );
-}
-
-export function Tag({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'accent' | 'success' | 'error' }) {
+/** Plain inline status label — coloured text, no pill/border, to keep status callouts unobtrusive. */
+export function StatusText({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'accent' | 'success' | 'error' }) {
   const tones = {
-    neutral: 'border-line-strong text-fg-muted',
-    accent: 'border-accent/40 text-accent',
-    success: 'border-success/40 text-success',
-    error: 'border-error/40 text-error',
+    neutral: 'text-fg-muted',
+    accent: 'text-accent',
+    success: 'text-success',
+    error: 'text-error',
   };
-  return (
-    <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${tones[tone]}`}>
-      {children}
-    </span>
-  );
+  return <span className={`text-caption font-medium ${tones[tone]}`}>{children}</span>;
 }
 
 // ---------------------------------------------------------------------------
@@ -282,6 +253,47 @@ export function Tabs<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Side panel (left-sliding drawer) — main nav entry point
+// ---------------------------------------------------------------------------
+
+export function Drawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+          <motion.div
+            className="absolute inset-y-0 left-0 z-10 flex w-[78%] max-w-[300px] flex-col bg-surface"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export function DrawerItem({ icon, label, onClick }: { icon?: ReactNode; label: ReactNode; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex w-full items-center gap-3 px-4 py-3 text-left text-body text-fg transition duration-150 hover:bg-surface2">
+      {icon && <span className="flex h-5 w-5 shrink-0 items-center justify-center text-fg-muted">{icon}</span>}
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+    </button>
   );
 }
 

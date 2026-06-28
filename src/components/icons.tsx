@@ -142,6 +142,32 @@ export function ClipboardListIcon(props: IconProps) {
   );
 }
 
+export function CalendarIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M6.5 4v3" />
+      <path d="M17.5 4v3" />
+      <path d="M5 8h14" />
+      <path d="M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" />
+      <path d="M9 13h.01" />
+      <path d="M12 13h.01" />
+      <path d="M15 13h.01" />
+      <path d="M9 16.5h.01" />
+      <path d="M12 16.5h.01" />
+    </Base>
+  );
+}
+
+export function LogoutIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M9 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3" />
+      <path d="M15 16l5-4-5-4" />
+      <path d="M20 12H9" />
+    </Base>
+  );
+}
+
 export function TrophyMiniIcon(props: IconProps) {
   return (
     <Base {...props}>

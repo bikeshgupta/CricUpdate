@@ -7,6 +7,7 @@ import { Screen } from './components/ui';
 import Login from './screens/Login';
 import Home from './screens/Home';
 import MatchSetup from './screens/MatchSetup';
+import PlanMatch from './screens/PlanMatch';
 import LiveMatch from './screens/LiveMatch';
 import Players from './screens/Players';
 import PlayerProfile from './screens/PlayerProfile';
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/tournament/:id" element={<TournamentDetail />} />
       <Route path="/" element={user ? <Home /> : <Login />} />
       <Route path="/new" element={user ? <MatchSetup /> : <Navigate to="/" replace />} />
+      <Route path="/plan" element={user ? <PlanMatch /> : <Navigate to="/" replace />} />
       <Route path="/squads" element={user ? <Squads /> : <Navigate to="/" replace />} />
       <Route path="/tournaments" element={user ? <Tournaments /> : <Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />

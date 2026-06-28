@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { dataService, type PlayerProfile as ClaimedProfile } from '../services/dataService';
 import { battingAverage, computeAllPlayerStats, economyOf, strikeRate, type PlayerStatTotals } from '../scoring/playerStats';
-import { BackButton, Button, Screen, SectionHeader, StickyHeader, Tag, TeamBadge, TextInput } from '../components/ui';
+import { BackButton, Button, Screen, SectionHeader, StickyHeader, StatusText, TextInput } from '../components/ui';
 
 function fmt(n: number | null, digits = 1): string {
   return n === null ? '—' : n.toFixed(digits);
@@ -111,13 +111,12 @@ export default function PlayerProfile() {
       ) : (
         <>
           <div className="flex flex-col items-center gap-2 px-4 py-6">
-            <TeamBadge name={displayName} size="lg" />
             <div className="text-section font-semibold text-fg">{displayName}</div>
             {stats && stats.teams.size > 0 && (
               <div className="text-caption text-fg-muted">{[...stats.teams].join(' · ')}</div>
             )}
             {profile ? (
-              <Tag tone="accent">@{profile.handle}</Tag>
+              <StatusText tone="accent">@{profile.handle}</StatusText>
             ) : (
               <span className="text-caption text-fg-faint">Unclaimed card</span>
             )}

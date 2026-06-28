@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dataService } from '../services/dataService';
 import { computeAllPlayerStats, type PlayerStatTotals } from '../scoring/playerStats';
-import { BackButton, Screen, StickyHeader, TeamBadge, TextInput } from '../components/ui';
+import { BackButton, Screen, StickyHeader, TextInput } from '../components/ui';
 
 export default function Players() {
   const navigate = useNavigate();
@@ -44,13 +44,10 @@ export default function Players() {
               onClick={() => navigate(`/player/${encodeURIComponent(s.nameKey)}`)}
               className="row w-full justify-between text-left transition duration-150 hover:bg-surface"
             >
-              <span className="flex min-w-0 items-center gap-3">
-                <TeamBadge name={s.displayName} size="sm" />
-                <span className="min-w-0">
-                  <span className="block truncate text-body text-fg">{s.displayName}</span>
-                  <span className="block truncate text-caption text-fg-muted">
-                    {s.matches} matches{s.teams.size > 0 ? ` · ${[...s.teams].join(', ')}` : ''}
-                  </span>
+              <span className="min-w-0">
+                <span className="block truncate text-body font-medium text-fg">{s.displayName}</span>
+                <span className="block truncate text-caption text-fg-muted">
+                  {s.matches} matches{s.teams.size > 0 ? ` · ${[...s.teams].join(', ')}` : ''}
                 </span>
               </span>
               <span className="nums shrink-0 text-right">

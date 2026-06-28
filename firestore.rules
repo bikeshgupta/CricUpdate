@@ -32,6 +32,14 @@ service cloud.firestore {
                     && resource.data.ownerUid == request.auth.uid;
     }
 
+    // RSVPs against a 'planning' match — anyone with the share link can RSVP
+    // ("I'm in"), and RSVPs are never edited or deleted once sent.
+    match /rsvps/{rsvpId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
     // Optional per-user profile docs.
     match /users/{uid} {
       allow read: if true;

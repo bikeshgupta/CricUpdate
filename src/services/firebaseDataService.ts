@@ -23,7 +23,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
-import type { Match, Squad, Tournament } from '../scoring/types';
+import type { Match, Rsvp, Squad, Tournament } from '../scoring/types';
 import type { AppUser, DataService, PlayerProfile } from './dataService';
 
 function mapUser(u: User | null): AppUser | null {
@@ -42,6 +42,7 @@ const profileDoc = (nameKey: string) => doc(db!, 'playerProfiles', nameKey);
 const handleDoc = (handle: string) => doc(db!, 'handles', handle);
 const squadDoc = (id: string) => doc(db!, 'squads', id);
 const tournamentDoc = (id: string) => doc(db!, 'tournaments', id);
+const rsvpDoc = (id: string) => doc(db!, 'rsvps', id);
 
 export const firebaseDataService: DataService = {
   async signInWithGoogle() {
@@ -165,5 +166,22 @@ export const firebaseDataService: DataService = {
     const matches: Match[] = [];
     snap.forEach((d) => matches.push(d.data() as Match));
     return matches.sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  async addRsvp(rsvp) {
+    await setDoc(rsvpDoc(rsvp.id), rsvp as DocumentData);
+  },
+
+  subscribeRsvps(matchId, cb) {
+    const q = query(collection(db!, 'rsvps'), where('matchId', '==', matchId));
+    return onSnapshot(
+      q,
+      (snap) => {
+        const rsvps: Rsvp[] = [];
+        snap.forEach((d) => rsvps.push(d.data() as Rsvp));
+        cb(rsvps.sort((a, b) => a.respondedAt - b.respondedAt));
+      },
+      () => cb([]),
+    );
   },
 };

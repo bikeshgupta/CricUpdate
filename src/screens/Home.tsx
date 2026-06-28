@@ -6,9 +6,20 @@ import { inningsState } from '../scoring/match';
 import type { Match } from '../scoring/types';
 import { addFollowedId, getFollowedIds, removeFollowedId } from '../hooks/useFollowedMatches';
 import { hidePlayer, hideTeam, isPlayerHidden, isTeamHidden } from '../hooks/useHidden';
-import { Button, Screen, SectionHeader, StickyHeader, Tag, TeamBadge, TextInput } from '../components/ui';
+import { Button, Drawer, DrawerItem, Screen, SectionHeader, StickyHeader, StatusText, TextInput } from '../components/ui';
 import { Wordmark } from '../components/Logo';
-import { ChevronDownIcon, ChevronRightIcon, ClipboardListIcon, JoinIcon, LiveDotIcon, TrashIcon, TrophyMiniIcon, UsersIcon } from '../components/icons';
+import {
+  CalendarIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ClipboardListIcon,
+  JoinIcon,
+  LiveDotIcon,
+  LogoutIcon,
+  TrashIcon,
+  TrophyMiniIcon,
+  UsersIcon,
+} from '../components/icons';
 
 type Tab = 'matches' | 'teams' | 'players';
 
@@ -24,8 +35,8 @@ function isLive(m: Match): boolean {
   return m.status === 'innings1' || m.status === 'innings2';
 }
 
-function formatScheduledShort(ts?: number): string {
-  if (!ts) return 'Scheduled';
+function formatScheduledShort(ts: number | undefined, fallback = 'Scheduled'): string {
+  if (!ts) return fallback;
   return new Date(ts).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 }
 
@@ -42,23 +53,25 @@ function MatchRow({ match, onClick, joined, onRemove }: { match: Match; onClick:
   const s1 = inningsState(match, 1);
   const s2 = inningsState(match, 2);
   const live = isLive(match);
+  const isPlanning = match.status === 'planning';
 
   return (
     <div className="flex w-full items-center transition duration-150 hover:bg-surface">
       <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 text-left">
-        <TeamBadge name={match.teamA.name} size="sm" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-item font-medium text-fg">
-              {match.teamA.name} <span className="text-fg-faint">v</span> {match.teamB.name}
+              {isPlanning ? 'Planning a match' : (
+                <>{match.teamA.name} <span className="text-fg-faint">v</span> {match.teamB.name}</>
+              )}
             </span>
             <span className="shrink-0 text-caption font-medium text-fg-muted">
               {live ? (
                 <span className="inline-flex items-center gap-1.5 text-accent">
                   <LiveDotIcon /> Live
                 </span>
-              ) : match.status === 'scheduled' ? (
-                formatScheduledShort(match.scheduledAt)
+              ) : match.status === 'scheduled' || isPlanning ? (
+                formatScheduledShort(match.scheduledAt, isPlanning ? 'Planning' : 'Scheduled')
               ) : (
                 relativeDate(match.createdAt)
               )}
@@ -70,7 +83,7 @@ function MatchRow({ match, onClick, joined, onRemove }: { match: Match; onClick:
               {s2 && <> · {s2.totalRuns}/{s2.wickets}</>}
             </span>
             <span className="flex shrink-0 items-center gap-1.5">
-              {joined && <Tag tone="accent">Joined</Tag>}
+              {joined && <StatusText tone="accent">Joined</StatusText>}
               {match.result && <span className="truncate text-caption text-success">{match.result}</span>}
             </span>
           </div>
@@ -141,6 +154,7 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>('matches');
   const [hiddenVersion, setHiddenVersion] = useState(0);
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     dataService.listMyMatches(user.uid).then((m) => {
@@ -163,7 +177,10 @@ export default function Home() {
   );
   const liveMatches = useMemo(() => allMatches.filter(isLive), [allMatches]);
   const upcomingMatches = useMemo(
-    () => allMatches.filter((m) => m.status === 'scheduled').sort((a, b) => (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0)),
+    () =>
+      allMatches
+        .filter((m) => m.status === 'scheduled' || m.status === 'planning')
+        .sort((a, b) => (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0)),
     [allMatches],
   );
 
@@ -200,7 +217,8 @@ export default function Home() {
 
   const handleDelete = async (match: Match) => {
     if (match.ownerUid === user.uid) {
-      if (!window.confirm(`Delete the match ${match.teamA.name} v ${match.teamB.name}? This can't be undone.`)) return;
+      const label = match.status === 'planning' ? 'this planned match' : `${match.teamA.name} v ${match.teamB.name}`;
+      if (!window.confirm(`Delete ${label}? This can't be undone.`)) return;
       await dataService.deleteMatch(match.id);
       setMatches((prev) => prev.filter((m) => m.id !== match.id));
     } else {
@@ -212,24 +230,55 @@ export default function Home() {
   return (
     <Screen>
       <StickyHeader
-        title={<Wordmark size={18} />}
-        right={
-          <>
-            <button onClick={() => navigate('/tournaments')} aria-label="Tournaments" className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface">
-              <TrophyMiniIcon size={18} />
-            </button>
-            <button onClick={() => navigate('/squads')} aria-label="Squads" className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface">
-              <ClipboardListIcon size={18} />
-            </button>
-            <button onClick={() => navigate('/players')} aria-label="Player stats" className="flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted hover:bg-surface">
-              <UsersIcon size={18} />
-            </button>
-            <button onClick={signOut} className="btn btn-ghost btn-sm">
-              Sign out
-            </button>
-          </>
+        title={
+          <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" className="-ml-1 flex items-center rounded-lg px-1 py-1 hover:bg-surface">
+            <Wordmark size={18} />
+          </button>
         }
       />
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <div className="border-b border-line px-4 py-4">
+          <Wordmark size={20} />
+        </div>
+        <div className="flex-1 divide-line">
+          <DrawerItem
+            icon={<CalendarIcon size={18} />}
+            label="Plan a match"
+            onClick={() => {
+              setDrawerOpen(false);
+              navigate('/plan');
+            }}
+          />
+          <DrawerItem
+            icon={<TrophyMiniIcon size={18} />}
+            label="Tournaments"
+            onClick={() => {
+              setDrawerOpen(false);
+              navigate('/tournaments');
+            }}
+          />
+          <DrawerItem
+            icon={<ClipboardListIcon size={18} />}
+            label="Squads"
+            onClick={() => {
+              setDrawerOpen(false);
+              navigate('/squads');
+            }}
+          />
+          <DrawerItem
+            icon={<UsersIcon size={18} />}
+            label="Player stats"
+            onClick={() => {
+              setDrawerOpen(false);
+              navigate('/players');
+            }}
+          />
+        </div>
+        <div className="border-t border-line">
+          <DrawerItem icon={<LogoutIcon size={18} />} label="Sign out" onClick={signOut} />
+        </div>
+      </Drawer>
 
       <div className="px-4 pb-3 pt-3">
         <Button variant="primary" block onClick={() => navigate('/new')}>
@@ -319,8 +368,7 @@ export default function Home() {
                   <div key={t.name}>
                     <div className="flex w-full items-center transition duration-150 hover:bg-surface">
                       <button onClick={() => setExpandedTeam(expanded ? null : t.name)} className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-2.5 text-left">
-                        <TeamBadge name={t.name} size="sm" />
-                        <span className="min-w-0 flex-1 truncate text-body text-fg">{t.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-body font-medium text-fg">{t.name}</span>
                         <span className="shrink-0 text-caption text-fg-muted">{t.players.length} players</span>
                         {expanded ? <ChevronDownIcon size={16} className="shrink-0 text-fg-faint" /> : <ChevronRightIcon size={16} className="shrink-0 text-fg-faint" />}
                       </button>

@@ -18,11 +18,11 @@ import {
   StickyHeader,
   Stepper,
   Switch,
-  TeamBadge,
   TextInput,
 } from '../components/ui';
 import { TrashIcon } from '../components/icons';
 import RosterEditor from '../components/RosterEditor';
+import TeamSplitter, { autoBalanceTeams } from '../components/TeamSplitter';
 
 type DraftTeam = Team; // { id, name, players: Player[] }
 type Mode = 'predefined' | 'adhoc';
@@ -42,15 +42,6 @@ const STEP_TITLES: Record<Step, string> = {
 
 function newTeam(name = ''): DraftTeam {
   return { id: crypto.randomUUID(), name, players: [] };
-}
-
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,28 +134,13 @@ export default function MatchSetup() {
 
   // --- split into two sides ---
   const autoBalance = () => {
-    const mixed = shuffled(pool);
-    const half = Math.ceil(mixed.length / 2);
-    setTeamA({ id: crypto.randomUUID(), name: teamA?.name || 'Team 1', players: mixed.slice(0, half) });
-    setTeamB({ id: crypto.randomUUID(), name: teamB?.name || 'Team 2', players: mixed.slice(half) });
+    const [a, b] = autoBalanceTeams(pool, teamA?.name || 'Team 1', teamB?.name || 'Team 2');
+    setTeamA(a);
+    setTeamB(b);
   };
   const goToSplit = () => {
     setStep('split');
     if (!teamA || !teamB) autoBalance();
-  };
-  const moveToOtherTeam = (pid: string, from: 'A' | 'B') => {
-    if (!teamA || !teamB) return;
-    if (from === 'A') {
-      const player = teamA.players.find((p) => p.id === pid);
-      if (!player) return;
-      setTeamA({ ...teamA, players: teamA.players.filter((p) => p.id !== pid) });
-      setTeamB({ ...teamB, players: [...teamB.players, player] });
-    } else {
-      const player = teamB.players.find((p) => p.id === pid);
-      if (!player) return;
-      setTeamB({ ...teamB, players: teamB.players.filter((p) => p.id !== pid) });
-      setTeamA({ ...teamA, players: [...teamA.players, player] });
-    }
   };
 
   const handleBack = () => {
@@ -305,20 +281,12 @@ export default function MatchSetup() {
         </div>
       )}
 
-      {step === 'split' && (
+      {step === 'split' && teamA && teamB && (
         <div className="flex-1">
           <div className="px-4 pb-2 pt-4 text-caption text-fg-faint">
             Auto-balanced into two even sides — tap a player to move them across, or re-shuffle.
           </div>
-          <div className="px-4 pb-3">
-            <Button variant="secondary" block onClick={autoBalance}>
-              Re-shuffle teams
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-3 px-4">
-            <SplitColumn team={teamA} onRename={(name) => setTeamA((t) => (t ? { ...t, name } : t))} onTapPlayer={(pid) => moveToOtherTeam(pid, 'A')} />
-            <SplitColumn team={teamB} onRename={(name) => setTeamB((t) => (t ? { ...t, name } : t))} onTapPlayer={(pid) => moveToOtherTeam(pid, 'B')} />
-          </div>
+          <TeamSplitter teamA={teamA} teamB={teamB} onTeamAChange={setTeamA} onTeamBChange={setTeamB} onReshuffle={autoBalance} />
           <div className="sticky bottom-0 mt-5 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <Button variant="primary" block disabled={!teamA?.players.length || !teamB?.players.length} onClick={() => setStep('roster')}>
               Continue
@@ -464,25 +432,6 @@ function ModeCard({ title, subtitle, onTap }: { title: string; subtitle: string;
   );
 }
 
-function SplitColumn({ team, onRename, onTapPlayer }: { team: DraftTeam | null; onRename: (name: string) => void; onTapPlayer: (pid: string) => void }) {
-  if (!team) return null;
-  return (
-    <div className="rounded-[10px] border border-line-strong bg-surface">
-      <div className="border-b border-line px-2.5 py-2">
-        <TextInput value={team.name} onChange={(e) => onRename(e.target.value)} placeholder="Team name" />
-      </div>
-      <div className="divide-line">
-        {team.players.map((p) => (
-          <button key={p.id} onClick={() => onTapPlayer(p.id)} className="block w-full px-2.5 py-2 text-left text-body text-fg transition duration-150 hover:bg-surface2">
-            {p.name}
-          </button>
-        ))}
-        {team.players.length === 0 && <div className="px-2.5 py-3 text-caption text-fg-faint">No players</div>}
-      </div>
-    </div>
-  );
-}
-
 function TeamCard({ team, onTap }: { team: DraftTeam | null; onTap: () => void }) {
   return (
     <button
@@ -491,13 +440,12 @@ function TeamCard({ team, onTap }: { team: DraftTeam | null; onTap: () => void }
     >
       {team ? (
         <>
-          <TeamBadge name={team.name || 'New'} size="lg" />
           <div className="line-clamp-1 text-center text-item font-medium text-fg">{team.name || 'New team'}</div>
           <div className="text-caption font-medium text-fg-muted">{team.players.length} players</div>
         </>
       ) : (
         <>
-          <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-line-strong text-2xl text-fg-muted">+</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-dashed border-line-strong text-2xl text-fg-muted">+</div>
           <div className="text-body text-fg-muted">Add team</div>
         </>
       )}
